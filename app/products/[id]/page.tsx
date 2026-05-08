@@ -15,6 +15,10 @@ import { addToGuestCart } from '@/lib/guest-cart'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+function getToken(): string | undefined {
+  return typeof window !== 'undefined' ? (window as any).__JWT : undefined
+}
+
 interface Product {
   id: string
   name: string
@@ -82,9 +86,13 @@ export default function ProductDetailPage() {
 
   const checkWishlistStatus = async () => {
     if (!session || session.user.role !== 'CLIENT') return
-    
+    const token = getToken()
+    if (!token) return
+
     try {
-      const response = await fetch(`${B}/wishlist`)
+      const response = await fetch(`${B}/wishlist`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       if (response.ok) {
         const wishlist = await response.json()
         setIsInWishlist(wishlist.some((item: any) => item.productId === params.id))
@@ -114,12 +122,14 @@ export default function ProductDetailPage() {
       return
     }
 
+    const token = getToken()
     setWishlistLoading(true)
     try {
       if (isInWishlist) {
         // Remove from wishlist
-        const response = await fetch(`${B}/wishlist?productId=${params.id}`, {
+        const response = await fetch(`${B}/wishlist/${params.id}`, {
           method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
         })
         if (response.ok) {
           setIsInWishlist(false)
@@ -135,7 +145,10 @@ export default function ProductDetailPage() {
         // Add to wishlist
         const response = await fetch(`${B}/wishlist`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ productId: params.id }),
         })
         if (response.ok) {
