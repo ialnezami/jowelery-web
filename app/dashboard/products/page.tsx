@@ -51,6 +51,11 @@ interface Product {
   }
 }
 
+interface Shop {
+  id: string
+  name: string
+}
+
 interface ProductFormData {
   name: string
   category: string
@@ -61,6 +66,7 @@ interface ProductFormData {
   description: string
   stockQuantity: string
   sku: string
+  shopId: string
 }
 
 export default function ProductsPage() {
@@ -76,6 +82,7 @@ export default function ProductsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
   const [goldRates, setGoldRates] = useState<Record<string, number>>({})
+  const [shops, setShops] = useState<Shop[]>([])
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     category: 'RINGS',
@@ -86,6 +93,7 @@ export default function ProductsPage() {
     description: '',
     stockQuantity: '0',
     sku: '',
+    shopId: '',
   })
 
   useEffect(() => {
@@ -96,11 +104,24 @@ export default function ProductsPage() {
     if (session && (session.user.role === 'SHOP_ADMIN' || session.user.role === 'SUPER_ADMIN')) {
       fetchProducts()
       fetchGoldRates()
+      if (session.user.role === 'SUPER_ADMIN') fetchShops()
     } else if (session) {
       router.push('/dashboard')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status])
+
+  const fetchShops = async () => {
+    try {
+      const response = await fetch(`${B}/shops`, { headers: authHeaders() })
+      if (response.ok) {
+        const data = await response.json()
+        setShops(Array.isArray(data) ? data : data.shops || [])
+      }
+    } catch (error) {
+      console.error('Error fetching shops:', error)
+    }
+  }
 
   const fetchGoldRates = async () => {
     try {
@@ -153,6 +174,7 @@ export default function ProductsPage() {
       description: '',
       stockQuantity: '0',
       sku: '',
+      shopId: shops[0]?.id || '',
     })
     setShowForm(true)
   }
@@ -169,6 +191,7 @@ export default function ProductsPage() {
       description: product.description || '',
       stockQuantity: product.stockQuantity.toString(),
       sku: product.sku,
+      shopId: product.shop?.id || '',
     })
     setShowForm(true)
   }
@@ -216,7 +239,7 @@ export default function ProductsPage() {
   const handleToggleActive = async (product: Product) => {
     try {
       const response = await fetch(`${B}/products/${product.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({
           isActive: !product.isActive,
@@ -252,7 +275,7 @@ export default function ProductsPage() {
     setSubmitting(true)
 
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         name: formData.name,
         category: formData.category,
         karat: formData.karat,
@@ -263,12 +286,12 @@ export default function ProductsPage() {
         stockQuantity: parseInt(formData.stockQuantity),
         sku: formData.sku,
       }
+      if (formData.shopId) payload.shopId = formData.shopId
 
       let response
       if (editingProduct) {
-        // Update existing product
         response = await fetch(`${B}/products/${editingProduct.id}`, {
-          method: 'PUT',
+          method: 'PATCH',
           headers: authHeaders(),
           body: JSON.stringify(payload),
         })
@@ -401,6 +424,7 @@ export default function ProductsPage() {
                   <p><span className="font-semibold">Karat:</span> {product.karat}</p>
                   <p><span className="font-semibold">Weight:</span> {product.weight}g</p>
                   <p><span className="font-semibold">Stock:</span> {product.stockQuantity}</p>
+                  {product.shop && <p><span className="font-semibold">Shop:</span> {product.shop.name}</p>}
                 </div>
                 <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent mb-4">
                   ${product.finalPrice.toFixed(2)}
@@ -461,6 +485,23 @@ export default function ProductsPage() {
             </CardHeader>
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Shop Selector — SUPER_ADMIN only */}
+                {shops.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Shop *</label>
+                    <select
+                      required
+                      value={formData.shopId}
+                      onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
+                      className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-sm transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                    >
+                      <option value="">Select a shop...</option>
+                      {shops.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
