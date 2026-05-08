@@ -5,21 +5,7 @@ Auth pattern: NextAuth session → `session.apiToken` synced to `window.__JWT` v
 
 ---
 
-## MEDIUM (remaining)
-
-### [W-9] i18n messages completeness
-- **Check:** `messages/` folder has `en.json`, `ar.json`, `fr.json`, `ordo.json`
-- **Verify:** All translation keys used in pages/components exist in each locale file
-- **Missing keys:** Add any that are referenced but undefined (causes runtime errors)
-
----
-
 ## LOW (remaining)
-
-### [W-10] Dockerfile update for decoupled frontend
-- **File:** `Dockerfile`
-- **Verify:** No references to Prisma, MongoDB, or internal API setup
-- **Should be:** Standard Next.js standalone build
 
 ### [W-11] GitHub repo push
 - **Status:** Git initialized locally, 8 commits ready
@@ -46,4 +32,6 @@ Auth pattern: NextAuth session → `session.apiToken` synced to `window.__JWT` v
 - **Admin settings** — tabbed: System Config, Shop Management, Gold Rates, Admin Users
 - **Analytics dashboard** — CSS bar charts (orders by status, top products, revenue by shop), recent orders table
 - **Gold rates page** — current rates table, sync button, manual override per karat
-- Git initialized, 8 commits
+- **[W-9]** i18n completeness — all 4 locales (en/ar/fr/ordo) have all 314 keys; 6 missing `shops.*` keys added to ar/fr
+- **[W-10]** Dockerfile audit — clean standard Next.js standalone build, no Prisma/MongoDB references
+- Git initialized, 10 commits
