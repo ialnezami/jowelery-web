@@ -9,12 +9,16 @@ import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Filter, SlidersHorizontal, ShoppingCart } from 'lucide-react'
+import { Sparkles, Filter, SlidersHorizontal, ShoppingCart, Heart } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
 import { addToGuestCart } from '@/lib/guest-cart'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
+function getToken(): string | undefined {
+  return typeof window !== 'undefined' ? (window as any).__JWT : undefined
+}
 
 interface Product {
   id: string
@@ -42,6 +46,8 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [addingToCart, setAddingToCart] = useState<string | null>(null)
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set())
+  const [togglingWishlist, setTogglingWishlist] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     category: '',
     karat: '',
@@ -53,6 +59,93 @@ export default function ProductsPage() {
     fetchProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
+
+  useEffect(() => {
+    if (session?.user?.role === 'CLIENT') {
+      fetchWishlist()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
+
+  const fetchWishlist = async () => {
+    const token = getToken()
+    if (!token) return
+    try {
+      const response = await fetch(`${B}/wishlist`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setWishlistedIds(new Set((data as { productId: string }[]).map((w) => w.productId)))
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist:', error)
+    }
+  }
+
+  const handleToggleWishlist = async (productId: string) => {
+    if (!session) {
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent('/products')}`)
+      return
+    }
+
+    const token = getToken()
+    const isWishlisted = wishlistedIds.has(productId)
+
+    // Optimistic update
+    setWishlistedIds((prev) => {
+      const next = new Set(prev)
+      if (isWishlisted) {
+        next.delete(productId)
+      } else {
+        next.add(productId)
+      }
+      return next
+    })
+
+    setTogglingWishlist(productId)
+    try {
+      let response: Response
+      if (isWishlisted) {
+        response = await fetch(`${B}/wishlist/${productId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      } else {
+        response = await fetch(`${B}/wishlist`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ productId }),
+        })
+      }
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        setWishlistedIds((prev) => {
+          const next = new Set(prev)
+          if (isWishlisted) {
+            next.add(productId)
+          } else {
+            next.delete(productId)
+          }
+          return next
+        })
+        throw new Error('Failed to update wishlist')
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update wishlist. Please try again.',
+      })
+    } finally {
+      setTogglingWishlist(null)
+    }
+  }
 
   const fetchProducts = async () => {
     try {
@@ -273,8 +366,8 @@ export default function ProductsPage() {
                   <Card className="overflow-hidden border-0 shadow-md hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300 hover-lift animate-fade-in h-full flex flex-col"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <Link href={`/products/${product.id}`}>
-                      <div className="aspect-square relative bg-gradient-to-br from-amber-50 to-yellow-50 overflow-hidden">
+                    <div className="aspect-square relative bg-gradient-to-br from-amber-50 to-yellow-50 overflow-hidden">
+                      <Link href={`/products/${product.id}`} className="block h-full w-full">
                         {product.images && product.images.length > 0 ? (
                           <Image
                             src={product.images[0]}
@@ -289,8 +382,21 @@ export default function ProductsPage() {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </Link>
+                      </Link>
+                      {(session?.user?.role === 'CLIENT' || !session) && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); handleToggleWishlist(product.id) }}
+                          disabled={togglingWishlist === product.id}
+                          className="absolute top-2 right-2 z-10 bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow hover:bg-white transition-colors"
+                          aria-label={wishlistedIds.has(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                        >
+                          <Heart
+                            size={18}
+                            className={wishlistedIds.has(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}
+                          />
+                        </button>
+                      )}
+                    </div>
                     <CardContent className="p-6 flex flex-col flex-grow">
                       <Link href={`/products/${product.id}`}>
                         <h3 className="font-bold text-lg mb-2 text-gray-900 group-hover:text-amber-600 transition-colors line-clamp-2">

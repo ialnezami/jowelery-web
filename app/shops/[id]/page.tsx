@@ -1,15 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Store, MapPin, Phone, Mail, Sparkles, ArrowLeft } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Store, MapPin, Phone, Mail, Sparkles, ArrowLeft, Star, Trash2, Pencil } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? (window as any).__JWT : undefined
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+
+// ── types ────────────────────────────────────────────────────────────────────
 
 interface Shop {
   id: string
@@ -40,25 +59,113 @@ interface Product {
   category: string
 }
 
+interface ShopReview {
+  id: string
+  userId: string
+  shopId: string
+  rating: number
+  comment: string
+  createdAt: string
+  user?: { name: string | null; email: string }
+}
+
+interface ShopReviewsResponse {
+  reviews: ShopReview[]
+  averageRating: number
+  total: number
+  distribution: Record<number, number>
+}
+
+// ── sub-components ────────────────────────────────────────────────────────────
+
+function StarRow({
+  rating,
+  interactive = false,
+  size = 'md',
+  onSelect,
+}: {
+  rating: number
+  interactive?: boolean
+  size?: 'sm' | 'md' | 'lg'
+  onSelect?: (r: number) => void
+}) {
+  const sizeClass = size === 'sm' ? 'h-4 w-4' : size === 'lg' ? 'h-7 w-7' : 'h-5 w-5'
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button
+          key={s}
+          type="button"
+          disabled={!interactive}
+          onClick={() => onSelect?.(s)}
+          className={interactive ? 'cursor-pointer focus:outline-none' : 'cursor-default pointer-events-none'}
+          aria-label={interactive ? `Rate ${s} star${s > 1 ? 's' : ''}` : undefined}
+        >
+          <Star
+            className={`${sizeClass} ${s <= rating ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-200'} ${interactive ? 'hover:fill-amber-300 hover:text-amber-300 transition-colors' : ''}`}
+          />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function RatingBar({ star, count, total }: { star: number; count: number; total: number }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="w-4 text-right text-gray-500">{star}</span>
+      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
+      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-amber-400 rounded-full transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="w-6 text-right text-gray-500">{count}</span>
+    </div>
+  )
+}
+
+// ── main page ─────────────────────────────────────────────────────────────────
+
 export default function ShopDetailPage() {
   const params = useParams()
   const router = useRouter()
   const t = useTranslations('shops')
+  const { data: session } = useSession()
+
   const [shop, setShop] = useState<Shop | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (params.id) {
-      fetchShop()
-      fetchProducts()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id])
+  // reviews state
+  const [reviewsData, setReviewsData] = useState<ShopReviewsResponse | null>(null)
+  const [myReview, setMyReview] = useState<ShopReview | null>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+
+  // dialog state
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editRating, setEditRating] = useState(5)
+  const [editComment, setEditComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+
+  // confirm delete state
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const shopId = params.id as string
+
+  // ── derived ──────────────────────────────────────────────────────────────────
+  const isClient = (session as any)?.user?.role === 'CLIENT'
+  const isAuthenticated = !!session?.user
+
+  // ── data fetching ─────────────────────────────────────────────────────────
 
   const fetchShop = async () => {
     try {
-      const response = await fetch(`${B}/shops/${params.id}`)
+      const response = await fetch(`${B}/shops/${shopId}`)
       if (response.ok) {
         const data = await response.json()
         setShop(data)
@@ -74,7 +181,7 @@ export default function ShopDetailPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${B}/products?shopId=${params.id}`)
+      const response = await fetch(`${B}/products?shopId=${shopId}`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -83,6 +190,118 @@ export default function ShopDetailPage() {
       console.error('Error fetching products:', error)
     }
   }
+
+  const loadReviews = useCallback(async () => {
+    if (!shopId) return
+    setReviewsLoading(true)
+    try {
+      const [publicRes, myRes] = await Promise.allSettled([
+        fetch(`${B}/shop-reviews/shop/${shopId}`),
+        fetch(`${B}/shop-reviews/my-review/${shopId}`, { headers: authHeaders() }),
+      ])
+
+      if (publicRes.status === 'fulfilled' && publicRes.value.ok) {
+        setReviewsData(await publicRes.value.json())
+      }
+
+      if (myRes.status === 'fulfilled' && myRes.value.ok) {
+        const mine = await myRes.value.json()
+        setMyReview(mine ?? null)
+      } else {
+        setMyReview(null)
+      }
+    } catch {
+      // non-fatal — show empty state
+    } finally {
+      setReviewsLoading(false)
+    }
+  }, [shopId])
+
+  useEffect(() => {
+    if (shopId) {
+      fetchShop()
+      fetchProducts()
+      loadReviews()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopId])
+
+  // ── dialog helpers ────────────────────────────────────────────────────────
+
+  const openWriteDialog = () => {
+    if (myReview) {
+      setEditRating(myReview.rating)
+      setEditComment(myReview.comment)
+    } else {
+      setEditRating(5)
+      setEditComment('')
+    }
+    setFormError(null)
+    setDialogOpen(true)
+  }
+
+  const handleSubmit = async () => {
+    if (!editComment.trim()) {
+      setFormError('Please write a comment before submitting.')
+      return
+    }
+    if (editComment.trim().length > 500) {
+      setFormError('Comment must be 500 characters or fewer.')
+      return
+    }
+    setFormError(null)
+    setSubmitting(true)
+    try {
+      if (myReview) {
+        const res = await fetch(`${B}/shop-reviews/${myReview.id}`, {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ rating: editRating, comment: editComment.trim() }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err?.message || 'Failed to update review')
+        }
+      } else {
+        const res = await fetch(`${B}/shop-reviews`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ shopId, rating: editRating, comment: editComment.trim() }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err?.message || 'Failed to submit review')
+        }
+      }
+      setDialogOpen(false)
+      loadReviews()
+    } catch (err: any) {
+      setFormError(err?.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!myReview) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`${B}/shop-reviews/${myReview.id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (!res.ok) throw new Error('Failed to delete review')
+      setMyReview(null)
+      setConfirmDeleteOpen(false)
+      loadReviews()
+    } catch {
+      // keep dialog open — error visible via server-side
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // ── loading / not-found guards ────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -102,6 +321,8 @@ export default function ShopDetailPage() {
       </div>
     )
   }
+
+  const dist = reviewsData?.distribution ?? {}
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/30 via-white to-amber-50/20">
@@ -210,7 +431,229 @@ export default function ShopDetailPage() {
           </div>
         )}
       </section>
+
+      {/* ── Reviews Section ──────────────────────────────────────────────────── */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">Customer Reviews</h2>
+
+          {/* Write / auth CTA */}
+          {isClient ? (
+            <div className="flex gap-2">
+              {myReview && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-amber-600 text-amber-600 hover:bg-amber-50 gap-1.5"
+                    onClick={openWriteDialog}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit My Review
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-500 text-red-500 hover:bg-red-50 gap-1.5"
+                    onClick={() => setConfirmDeleteOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </>
+              )}
+              {!myReview && (
+                <Button
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                  onClick={openWriteDialog}
+                >
+                  <Star className="h-4 w-4" />
+                  Write a Review
+                </Button>
+              )}
+            </div>
+          ) : !isAuthenticated ? (
+            <Link href="/auth/signin">
+              <Button variant="outline" size="sm" className="border-amber-600 text-amber-600 hover:bg-amber-50">
+                Sign in to leave a review
+              </Button>
+            </Link>
+          ) : null}
+        </div>
+
+        {reviewsLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+          </div>
+        ) : (
+          <>
+            {/* Summary card */}
+            {(reviewsData?.total ?? 0) > 0 && (
+              <Card className="border-0 shadow-md mb-8">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row gap-8 items-center sm:items-start">
+                    {/* Big rating number */}
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <span className="text-6xl font-bold text-amber-600">
+                        {reviewsData!.averageRating.toFixed(1)}
+                      </span>
+                      <StarRow rating={Math.round(reviewsData!.averageRating)} size="md" />
+                      <span className="text-sm text-gray-500 mt-1">
+                        {reviewsData!.total} {reviewsData!.total === 1 ? 'review' : 'reviews'}
+                      </span>
+                    </div>
+
+                    {/* Distribution bars */}
+                    <div className="flex-1 w-full max-w-xs space-y-1.5">
+                      {[5, 4, 3, 2, 1].map((s) => (
+                        <RatingBar
+                          key={s}
+                          star={s}
+                          count={dist[s] ?? 0}
+                          total={reviewsData!.total}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Reviews list */}
+            {(reviewsData?.reviews ?? []).length === 0 ? (
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-12 text-center">
+                  <span className="text-4xl mb-4 block">✦</span>
+                  <p className="text-lg font-medium text-gray-700 mb-1">No Reviews Yet</p>
+                  <p className="text-sm text-gray-500">Be the first to share your experience with this shop.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {reviewsData!.reviews.map((review) => {
+                  const isOwn = review.userId === (session as any)?.user?.id
+                  const displayName = review.user?.name || review.user?.email || 'Customer'
+                  const initial = displayName.charAt(0).toUpperCase()
+                  return (
+                    <Card
+                      key={review.id}
+                      className={`border-0 shadow-sm ${isOwn ? 'ring-1 ring-amber-300' : ''}`}
+                    >
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-4">
+                          {/* Avatar */}
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                            {initial}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-semibold text-gray-900 text-sm">
+                                {displayName}
+                                {isOwn && (
+                                  <span className="ml-2 text-xs text-amber-600 font-normal">(You)</span>
+                                )}
+                              </span>
+                              <span className="text-xs text-gray-400 flex-shrink-0">
+                                {new Date(review.createdAt).toLocaleDateString(undefined, {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                            </div>
+
+                            <StarRow rating={review.rating} size="sm" />
+
+                            <p className="mt-2 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {review.comment}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* ── Write / Edit Review Dialog ───────────────────────────────────────── */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{myReview ? 'Edit Your Review' : 'Write a Review'}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-2">Your Rating</label>
+              <StarRow rating={editRating} interactive size="lg" onSelect={setEditRating} />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-2">Your Comment</label>
+              <textarea
+                value={editComment}
+                onChange={(e) => {
+                  setEditComment(e.target.value)
+                  if (formError) setFormError(null)
+                }}
+                placeholder="Share your experience with this shop…"
+                rows={4}
+                maxLength={500}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+              />
+              <div className="flex justify-between mt-1">
+                {formError ? (
+                  <p className="text-xs text-red-500">{formError}</p>
+                ) : (
+                  <span />
+                )}
+                <span className="text-xs text-gray-400 ml-auto">{editComment.length}/500</span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? 'Saving…' : myReview ? 'Update' : 'Submit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Confirm Delete Dialog ─────────────────────────────────────────────── */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Review</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">Are you sure you want to delete your review? This action cannot be undone.</p>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-
