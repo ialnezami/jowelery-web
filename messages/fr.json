@@ -81,7 +81,13 @@
     "subtitle": "Découvrez des boutiques d'or de confiance",
     "noShops": "Aucune boutique disponible",
     "products": "Produits",
-    "orders": "Commandes"
+    "orders": "Commandes",
+    "noShopsFound": "Aucune boutique trouvée",
+    "searchShops": "Rechercher des boutiques par nom, description ou localisation...",
+    "shopsFound": "{count} boutiques trouvées",
+    "tryDifferentSearch": "Essayez un autre terme de recherche",
+    "verifiedShops": "Boutiques vérifiées",
+    "viewShop": "Voir la boutique"
   },
   "cart": {
     "title": "Panier",
@@ -342,4 +348,3 @@
     "visitHelpCenter": "Visiter le Centre d'Aide"
   }
 }
-

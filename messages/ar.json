@@ -81,7 +81,13 @@
     "subtitle": "اكتشف متاجر الذهب الموثوقة",
     "noShops": "لا توجد متاجر متاحة",
     "products": "منتجات",
-    "orders": "طلبات"
+    "orders": "طلبات",
+    "noShopsFound": "لا توجد متاجر",
+    "searchShops": "البحث عن المتاجر بالاسم أو الوصف أو الموقع...",
+    "shopsFound": "{count} متاجر",
+    "tryDifferentSearch": "جرب كلمة بحث مختلفة",
+    "verifiedShops": "متاجر موثوقة",
+    "viewShop": "عرض المتجر"
   },
   "cart": {
     "title": "سلة التسوق",
@@ -342,4 +348,3 @@
     "visitHelpCenter": "زيارة مركز المساعدة"
   }
 }
-
