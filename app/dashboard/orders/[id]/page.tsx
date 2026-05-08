@@ -5,9 +5,34 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Download, Package, XCircle, RefreshCw, AlertTriangle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  Package,
+  XCircle,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  User,
+  Save,
+} from 'lucide-react'
 import { OrderTimeline } from '@/components/OrderTimeline'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
@@ -15,13 +40,48 @@ const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 /** Statuses where the client is still allowed to cancel */
 const CANCELLABLE_STATUSES = new Set(['PENDING_PAYMENT', 'PAYMENT_CONFIRMED'])
 
+/** Statuses where admin can issue a refund */
+const REFUNDABLE_STATUSES = new Set([
+  'PAYMENT_CONFIRMED',
+  'PROCESSING',
+  'READY_FOR_PICKUP',
+  'SHIPPED',
+  'DELIVERED',
+  'COMPLETED',
+])
+
+const ORDER_STATUSES = [
+  { value: 'PENDING_PAYMENT',   label: 'Pending Payment' },
+  { value: 'PAYMENT_CONFIRMED', label: 'Payment Confirmed' },
+  { value: 'PROCESSING',        label: 'Processing' },
+  { value: 'READY_FOR_PICKUP',  label: 'Ready for Pickup' },
+  { value: 'SHIPPED',           label: 'Shipped' },
+  { value: 'OUT_FOR_DELIVERY',  label: 'Out for Delivery' },
+  { value: 'DELIVERED',         label: 'Delivered' },
+  { value: 'COMPLETED',         label: 'Completed' },
+  { value: 'CANCELLED',         label: 'Cancelled' },
+  { value: 'REFUNDED',          label: 'Refunded' },
+] as const
+
 function getToken(): string | undefined {
-  return (window as any).__JWT as string | undefined
+  return typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
 }
 
 function authHeaders(): Record<string, string> {
   const token = getToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface OrderUser {
+  id: string
+  name?: string | null
+  email: string
+  phone?: string | null
 }
 
 interface Order {
@@ -32,6 +92,7 @@ interface Order {
   status: string
   paymentMethod: string | null
   paymentStatus: string | null
+  notes?: string | null
   shippingAddress: {
     firstName?: string
     lastName?: string
@@ -43,9 +104,10 @@ interface Order {
     phone?: string
     email?: string
   } | null
-  billingAddress: any
+  billingAddress: Record<string, unknown> | null
   createdAt: string
   updatedAt: string
+  user?: OrderUser | null
   items: Array<{
     id: string
     quantity: number
@@ -58,6 +120,8 @@ interface Order {
     }
   }>
 }
+
+// ── Status styles ─────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING_PAYMENT:   'bg-yellow-100 text-yellow-800',
@@ -72,23 +136,48 @@ const STATUS_COLORS: Record<string, string> = {
   REFUNDED:          'bg-gray-100 text-gray-700',
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function OrderDetailPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const params = useParams()
+
+  const isAdmin =
+    session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'SHOP_ADMIN'
+
+  // Data
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // Client cancel
   const [cancelling, setCancelling] = useState(false)
 
+  // Admin status update
+  const [selectedStatus, setSelectedStatus] = useState<string>('')
+  const [statusUpdating, setStatusUpdating] = useState(false)
+
+  // Admin notes
+  const [notesValue, setNotesValue] = useState('')
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesDirty, setNotesDirty] = useState(false)
+
+  // Refund dialog
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false)
+  const [refundReason, setRefundReason] = useState('')
+  const [refunding, setRefunding] = useState(false)
+  const [refundError, setRefundError] = useState<string | null>(null)
+
+  // Success
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  // ── Fetch order ─────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/login')
-      return
-    }
-    if (session && params.id) {
-      fetchOrder()
-    }
+    if (status === 'unauthenticated') { router.push('/auth/login'); return }
+    if (session && params.id) fetchOrder()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, params.id])
 
@@ -96,27 +185,16 @@ export default function OrderDetailPage() {
     try {
       setLoading(true)
       setFetchError(null)
-      const response = await fetch(`${B}/orders/${params.id}`, {
-        headers: authHeaders(),
-      })
-      if (response.status === 401) {
-        router.push('/auth/login')
-        return
-      }
-      if (response.status === 403) {
-        setFetchError('You do not have permission to view this order.')
-        return
-      }
-      if (response.status === 404) {
-        setFetchError('Order not found.')
-        return
-      }
-      if (response.ok) {
-        const data = await response.json()
-        setOrder(data)
-      } else {
-        setFetchError('Failed to load order. Please try again.')
-      }
+      const res = await fetch(`${B}/orders/${params.id}`, { headers: authHeaders() })
+      if (res.status === 401) { router.push('/auth/login'); return }
+      if (res.status === 403) { setFetchError('You do not have permission to view this order.'); return }
+      if (res.status === 404) { setFetchError('Order not found.'); return }
+      if (!res.ok) { setFetchError('Failed to load order. Please try again.'); return }
+      const data: Order = await res.json()
+      setOrder(data)
+      setSelectedStatus(data.status)
+      setNotesValue(data.notes ?? '')
+      setNotesDirty(false)
     } catch {
       setFetchError('Network error. Please check your connection.')
     } finally {
@@ -124,14 +202,149 @@ export default function OrderDetailPage() {
     }
   }
 
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  const showSuccess = (msg: string) => {
+    setSuccessMsg(msg)
+    setActionError(null)
+    setTimeout(() => setSuccessMsg(null), 3500)
+  }
+
+  const showActionError = (msg: string) => {
+    setActionError(msg)
+    setTimeout(() => setActionError(null), 4000)
+  }
+
+  // ── Client cancel ────────────────────────────────────────────────────────────
+
+  const handleCancel = async () => {
+    if (!order || !confirm('Are you sure you want to cancel this order?')) return
+    setCancelling(true)
+    try {
+      const res = await fetch(`${B}/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        showActionError(body?.message || 'Failed to cancel order.')
+        return
+      }
+      const updated: Order = await res.json()
+      setOrder(updated)
+      setSelectedStatus(updated.status)
+    } catch {
+      showActionError('Network error. Please try again.')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  // ── Admin status update ──────────────────────────────────────────────────────
+
+  const handleStatusUpdate = async () => {
+    if (!order || !selectedStatus || selectedStatus === order.status) return
+    setStatusUpdating(true)
+    try {
+      const res = await fetch(`${B}/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ status: selectedStatus }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        showActionError(body?.message || 'Failed to update status.')
+        return
+      }
+      const updated: Order = await res.json()
+      setOrder(updated)
+      setSelectedStatus(updated.status)
+      showSuccess('Order status updated.')
+    } catch {
+      showActionError('Network error. Please try again.')
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
+
+  // ── Admin notes save ─────────────────────────────────────────────────────────
+
+  const handleSaveNotes = async () => {
+    if (!order) return
+    setNotesSaving(true)
+    try {
+      const res = await fetch(`${B}/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ status: order.status, notes: notesValue }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        showActionError(body?.message || 'Failed to save notes.')
+        return
+      }
+      const updated: Order = await res.json()
+      setOrder(updated)
+      setNotesValue(updated.notes ?? '')
+      setNotesDirty(false)
+      showSuccess('Notes saved.')
+    } catch {
+      showActionError('Network error. Please try again.')
+    } finally {
+      setNotesSaving(false)
+    }
+  }
+
+  // ── Refund ───────────────────────────────────────────────────────────────────
+
+  const openRefundDialog = () => {
+    setRefundReason('')
+    setRefundError(null)
+    setRefundDialogOpen(true)
+  }
+
+  const closeRefundDialog = () => {
+    setRefundDialogOpen(false)
+    setRefundReason('')
+    setRefundError(null)
+  }
+
+  const confirmRefund = async () => {
+    if (!order) return
+    setRefunding(true)
+    setRefundError(null)
+    try {
+      const res = await fetch(`${B}/orders/${order.id}/refund`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ reason: refundReason.trim() || undefined }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setRefundError(body?.message || 'Failed to process refund.')
+        return
+      }
+      const updated: Order = await res.json()
+      setOrder(updated)
+      setSelectedStatus(updated.status)
+      showSuccess('Order marked as refunded.')
+      closeRefundDialog()
+    } catch {
+      setRefundError('Network error. Please try again.')
+    } finally {
+      setRefunding(false)
+    }
+  }
+
+  // ── Invoice download ─────────────────────────────────────────────────────────
+
   const handleDownloadInvoice = async () => {
     if (!order) return
     try {
-      const response = await fetch(`${B}/orders/${order.id}/invoice`, {
-        headers: authHeaders(),
-      })
-      if (response.ok) {
-        const blob = await response.blob()
+      const res = await fetch(`${B}/orders/${order.id}/invoice`, { headers: authHeaders() })
+      if (res.ok) {
+        const blob = await res.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -141,46 +354,24 @@ export default function OrderDetailPage() {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
       }
-    } catch (error) {
-      console.error('Error downloading invoice:', error)
-    }
-  }
-
-  const handleCancel = async () => {
-    if (!order || !confirm('Are you sure you want to cancel this order?')) return
-
-    setCancelling(true)
-    try {
-      const response = await fetch(`${B}/orders/${order.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ status: 'CANCELLED' }),
-      })
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}))
-        alert(body?.message || 'Failed to cancel order. Please try again.')
-        return
-      }
-      const updated: Order = await response.json()
-      setOrder(updated)
     } catch {
-      alert('Network error. Please try again.')
-    } finally {
-      setCancelling(false)
+      // Non-critical — skip
     }
   }
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Loading ──────────────────────────────────────────────────────────────────
+
   if (status === 'loading' || loading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
       </div>
     )
   }
 
-  // ── Fetch error ──────────────────────────────────────────────────────────
-  if (fetchError) {
+  // ── Fetch error ──────────────────────────────────────────────────────────────
+
+  if (fetchError && !order) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Link href="/dashboard/orders" className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 mb-6">
@@ -210,16 +401,29 @@ export default function OrderDetailPage() {
 
   const isCancelled = order.status === 'CANCELLED' || order.status === 'REFUNDED'
   const isRefunded  = order.status === 'REFUNDED'
-  const canCancel   = CANCELLABLE_STATUSES.has(order.status)
+  const canCancel   = !isAdmin && CANCELLABLE_STATUSES.has(order.status)
+  const canRefund   = isAdmin && REFUNDABLE_STATUSES.has(order.status)
   const statusClass = STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-700'
+  const statusDirty = selectedStatus !== order.status
+
+  const statusLabel = (s: string) =>
+    ORDER_STATUSES.find((x) => x.value === s)?.label ?? s.replace(/_/g, ' ')
+
+  const customerName =
+    order.user?.name ||
+    (order.shippingAddress?.firstName
+      ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName ?? ''}`.trim()
+      : null) ||
+    '—'
+
+  // ── Page ─────────────────────────────────────────────────────────────────────
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
+
+      {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <Link
-          href="/dashboard/orders"
-          className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 mb-4"
-        >
+        <Link href="/dashboard/orders" className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back to Orders
         </Link>
@@ -232,9 +436,9 @@ export default function OrderDetailPage() {
               Placed on {new Date(order.createdAt).toLocaleDateString()}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${statusClass}`}>
-              {order.status.replace(/_/g, ' ')}
+              {statusLabel(order.status)}
             </span>
             <Button onClick={handleDownloadInvoice} variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
@@ -244,33 +448,129 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* ── Cancelled / Refunded banner ─────────────────────────────────── */}
+      {/* Notifications */}
+      {successMsg && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border-2 border-green-200 bg-green-50 px-4 py-3">
+          <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+          <p className="font-medium text-green-800">{successMsg}</p>
+        </div>
+      )}
+      {actionError && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border-2 border-red-200 bg-red-50 px-4 py-3">
+          <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+          <p className="font-medium text-red-700">{actionError}</p>
+        </div>
+      )}
+
+      {/* Cancelled / Refunded banner */}
       {isCancelled && (
         <Card className={`mb-6 border-2 ${isRefunded ? 'border-gray-200 bg-gray-50' : 'border-red-200 bg-red-50'}`}>
           <CardContent className="p-4 flex items-center gap-3">
             {isRefunded
               ? <RefreshCw className="h-5 w-5 text-gray-500 shrink-0" />
-              : <XCircle className="h-5 w-5 text-red-500 shrink-0" />
-            }
+              : <XCircle className="h-5 w-5 text-red-500 shrink-0" />}
             <div>
               <p className={`font-semibold ${isRefunded ? 'text-gray-700' : 'text-red-700'}`}>
                 {isRefunded ? 'This order has been refunded' : 'This order has been cancelled'}
               </p>
-              {isRefunded && (
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Refund status: <span className="font-medium">REFUNDED</span>
-                </p>
-              )}
             </div>
           </CardContent>
         </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Left column: timeline + items ───────────────────────────── */}
+
+        {/* ── Left column ──────────────────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Tracking timeline — hidden for cancelled/refunded */}
+          {/* Admin management panel */}
+          {isAdmin && (
+            <Card className="border-0 shadow-md border-l-4 border-l-amber-500">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Admin Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+
+                {/* Status update */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Change Order Status
+                  </label>
+                  <div className="flex gap-2">
+                    <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORDER_STATUSES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={handleStatusUpdate}
+                      disabled={!statusDirty || statusUpdating}
+                      className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                    >
+                      {statusUpdating ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                      ) : (
+                        <><Save className="h-4 w-4 mr-1.5" />Save</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Refund */}
+                {canRefund && (
+                  <div className="pt-1">
+                    <Button
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                      onClick={openRefundDialog}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Issue Refund
+                    </Button>
+                  </div>
+                )}
+
+                {/* Admin notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Admin Notes
+                  </label>
+                  <textarea
+                    className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                    rows={3}
+                    placeholder="Internal notes (not visible to customer)…"
+                    value={notesValue}
+                    onChange={(e) => { setNotesValue(e.target.value); setNotesDirty(true) }}
+                    disabled={notesSaving}
+                  />
+                  {notesDirty && (
+                    <Button
+                      size="sm"
+                      className="mt-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={handleSaveNotes}
+                      disabled={notesSaving}
+                    >
+                      {notesSaving ? (
+                        <span className="flex items-center gap-2">
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-b-2 border-white" />
+                          Saving…
+                        </span>
+                      ) : (
+                        <><Save className="h-3.5 w-3.5 mr-1" />Save Notes</>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Order tracking timeline */}
           {!isCancelled && (
             <Card className="border-0 shadow-md">
               <CardHeader>
@@ -331,7 +631,7 @@ export default function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Cancel button — only for PENDING_PAYMENT and PAYMENT_CONFIRMED */}
+          {/* Client cancel */}
           {canCancel && (
             <Button
               variant="outline"
@@ -354,8 +654,46 @@ export default function OrderDetailPage() {
           )}
         </div>
 
-        {/* ── Right column: summary + address ─────────────────────────── */}
+        {/* ── Right column ─────────────────────────────────────────────────── */}
         <div className="space-y-6">
+
+          {/* Customer info — admin only */}
+          {isAdmin && (
+            <Card className="border-0 shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-amber-600" />
+                  Customer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Name</span>
+                  <span className="font-medium text-right">{customerName}</span>
+                </div>
+                {order.user?.email && (
+                  <div className="flex justify-between gap-2">
+                    <span className="text-gray-500 shrink-0">Email</span>
+                    <a
+                      href={`mailto:${order.user.email}`}
+                      className="font-medium text-amber-600 hover:underline truncate text-right"
+                    >
+                      {order.user.email}
+                    </a>
+                  </div>
+                )}
+                {(order.user?.phone || order.shippingAddress?.phone) && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Phone</span>
+                    <span className="font-medium">
+                      {order.user?.phone ?? order.shippingAddress?.phone}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Order summary */}
           <Card className="border-0 shadow-md">
             <CardHeader>
@@ -375,9 +713,7 @@ export default function OrderDetailPage() {
               {order.paymentStatus && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Payment Status</span>
-                  <span className="font-semibold capitalize">
-                    {order.paymentStatus}
-                  </span>
+                  <span className="font-semibold capitalize">{order.paymentStatus}</span>
                 </div>
               )}
               <div className="pt-4 border-t">
@@ -412,9 +748,7 @@ export default function OrderDetailPage() {
                     </p>
                   )}
                   {(order.shippingAddress.zipCode || order.shippingAddress.country) && (
-                    <p>
-                      {order.shippingAddress.zipCode} {order.shippingAddress.country}
-                    </p>
+                    <p>{order.shippingAddress.zipCode} {order.shippingAddress.country}</p>
                   )}
                   {order.shippingAddress.phone && <p>Phone: {order.shippingAddress.phone}</p>}
                   {order.shippingAddress.email && <p>Email: {order.shippingAddress.email}</p>}
@@ -426,6 +760,56 @@ export default function OrderDetailPage() {
       </div>
 
       <div className="h-12" />
+
+      {/* Refund Dialog */}
+      <Dialog open={refundDialogOpen} onOpenChange={(open) => { if (!open) closeRefundDialog() }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Process Refund</DialogTitle>
+            <DialogDescription>
+              Mark order #{order.orderNumber} as refunded? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Reason <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-colors"
+              rows={3}
+              placeholder="Enter refund reason…"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              disabled={refunding}
+            />
+            {refundError && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                {refundError}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeRefundDialog} disabled={refunding}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmRefund}
+              disabled={refunding}
+            >
+              {refunding ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                  Processing…
+                </span>
+              ) : 'Confirm Refund'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
