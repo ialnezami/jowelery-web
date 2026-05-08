@@ -12,6 +12,12 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface Recipient {
   id: string
   firstName: string
@@ -57,7 +63,7 @@ export default function RecipientsPage() {
   const fetchRecipients = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/recipients`)
+      const response = await fetch(`${B}/recipients`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setRecipients(data)
@@ -111,6 +117,7 @@ export default function RecipientsPage() {
     try {
       const response = await fetch(`${B}/recipients/${recipientToDelete}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -143,6 +150,7 @@ export default function RecipientsPage() {
     try {
       const response = await fetch(`${B}/recipients/${recipientId}/set-default`, {
         method: 'PUT',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -187,13 +195,13 @@ export default function RecipientsPage() {
       if (editingRecipient) {
         response = await fetch(`${B}/recipients/${editingRecipient.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify(payload),
         })
       } else {
         response = await fetch(`${B}/recipients`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify(payload),
         })
       }

@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 import {
   DollarSign,
   ShoppingCart,
@@ -57,7 +64,7 @@ export default function AnalyticsPage() {
       if (dateRange.startDate) params.append('startDate', dateRange.startDate)
       if (dateRange.endDate) params.append('endDate', dateRange.endDate)
 
-      const response = await fetch(`${B}/analytics?${params.toString()}`)
+      const response = await fetch(`${B}/analytics?${params.toString()}`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setAnalytics(data)

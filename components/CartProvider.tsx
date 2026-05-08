@@ -6,6 +6,12 @@ import { getGuestCart, getGuestCartCount, clearGuestCart } from '@/lib/guest-car
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface CartContextType {
   cartCount: number
   refreshCart: () => Promise<void>
@@ -31,9 +37,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const token = (session as any)?.apiToken
       const response = await fetch(`${B}/cart`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: authHeaders(),
       })
       if (response.ok) {
         const cartItems = await response.json()
@@ -61,13 +66,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const token = (session as any)?.apiToken
       const response = await fetch(`${B}/cart/merge`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           items: guestCart,
         }),

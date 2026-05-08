@@ -11,6 +11,12 @@ import Link from 'next/link'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface UserProfile {
   id: string
   name: string | null
@@ -93,7 +99,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (status !== 'authenticated') return
-    fetch(`${B}/users/profile`)
+    fetch(`${B}/users/profile`, { headers: authHeaders() })
       .then(r => r.json())
       .then((data: UserProfile) => {
         setProfile(data)
@@ -114,7 +120,7 @@ export default function AccountPage() {
     try {
       const res = await fetch(`${B}/users/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ name: name.trim(), phone: phone.trim() || undefined }),
       })
       const data = await res.json()
@@ -143,7 +149,7 @@ export default function AccountPage() {
     try {
       const res = await fetch(`${B}/users/change-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ currentPassword: emailPassword, newEmail: newEmail.trim() }),
       })
       const data = await res.json()
@@ -177,7 +183,7 @@ export default function AccountPage() {
     try {
       const res = await fetch(`${B}/users/change-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
       })
       const data = await res.json()

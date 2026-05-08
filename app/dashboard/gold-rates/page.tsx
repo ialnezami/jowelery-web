@@ -12,6 +12,12 @@ import Link from 'next/link'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface GoldRate {
   karat: string
   rate: number
@@ -45,7 +51,7 @@ export default function GoldRatesPage() {
   const fetchGoldRates = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/gold-rates`)
+      const response = await fetch(`${B}/gold-rates`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setGoldRates(data)
@@ -79,6 +85,7 @@ export default function GoldRatesPage() {
       setSyncing(true)
       const response = await fetch(`${B}/gold-rates/sync`, {
         method: 'POST',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -124,9 +131,7 @@ export default function GoldRatesPage() {
       setSaving(true)
       const response = await fetch(`${B}/gold-rates`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           karat,
           rate: rateValue,

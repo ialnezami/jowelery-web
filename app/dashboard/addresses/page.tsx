@@ -12,6 +12,12 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface Address {
   id: string
   firstName: string
@@ -65,7 +71,7 @@ export default function AddressesPage() {
   const fetchAddresses = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/addresses`)
+      const response = await fetch(`${B}/addresses`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setAddresses(data)
@@ -127,6 +133,7 @@ export default function AddressesPage() {
     try {
       const response = await fetch(`${B}/addresses/${addressToDelete}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -159,6 +166,7 @@ export default function AddressesPage() {
     try {
       const response = await fetch(`${B}/addresses/${addressId}/set-default`, {
         method: 'PUT',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -207,13 +215,13 @@ export default function AddressesPage() {
       if (editingAddress) {
         response = await fetch(`${B}/addresses/${editingAddress.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify(payload),
         })
       } else {
         response = await fetch(`${B}/addresses`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify(payload),
         })
       }

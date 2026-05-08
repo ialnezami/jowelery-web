@@ -4,6 +4,13 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -148,7 +155,7 @@ export default function CheckoutPage() {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${B}/cart`)
+      const response = await fetch(`${B}/cart`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setCartItems(data)
@@ -208,7 +215,7 @@ export default function CheckoutPage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`${B}/users/profile`)
+      const response = await fetch(`${B}/users/profile`, { headers: authHeaders() })
       if (response.ok) {
         const profile = await response.json()
         setUserProfile(profile)
@@ -231,7 +238,7 @@ export default function CheckoutPage() {
 
   const fetchAddresses = async () => {
     try {
-      const response = await fetch(`${B}/addresses`)
+      const response = await fetch(`${B}/addresses`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setAddresses(data)
@@ -260,7 +267,7 @@ export default function CheckoutPage() {
 
   const fetchRecipients = async () => {
     try {
-      const response = await fetch(`${B}/recipients`)
+      const response = await fetch(`${B}/recipients`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setRecipients(data)
@@ -463,7 +470,7 @@ export default function CheckoutPage() {
     try {
       const response = await fetch(`${B}/addresses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
@@ -525,7 +532,7 @@ export default function CheckoutPage() {
     try {
       const response = await fetch(`${B}/recipients`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
@@ -631,9 +638,7 @@ export default function CheckoutPage() {
       // Create order first
       const orderResponse = await fetch(`${B}/orders`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           items: cartItems.map(item => ({
             productId: item.product?.id || item.productId,
@@ -664,9 +669,7 @@ export default function CheckoutPage() {
 
         const paymentSessionResponse = await fetch(`${B}/payments/sessions`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authHeaders(),
           body: JSON.stringify({
             orderId: order.id,
             returnUrl,
@@ -720,9 +723,7 @@ export default function CheckoutPage() {
       // Verify payment result with backend
       const response = await fetch(`${B}/payments/result`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify(result),
       })
 

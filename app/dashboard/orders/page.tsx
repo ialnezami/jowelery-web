@@ -11,6 +11,12 @@ import { OrderTimeline } from '@/components/OrderTimeline'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface Order {
   id: string
   orderNumber: string
@@ -49,7 +55,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${B}/orders`)
+      const response = await fetch(`${B}/orders`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setOrders(data)

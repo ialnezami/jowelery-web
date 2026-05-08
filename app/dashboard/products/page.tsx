@@ -24,6 +24,12 @@ import Link from 'next/link'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface Product {
   id: string
   name: string
@@ -98,7 +104,7 @@ export default function ProductsPage() {
 
   const fetchGoldRates = async () => {
     try {
-      const response = await fetch(`${B}/gold-rates`)
+      const response = await fetch(`${B}/gold-rates`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         const rates: Record<string, number> = {}
@@ -118,7 +124,7 @@ export default function ProductsPage() {
     try {
       setLoading(true)
       // Include inactive products for dashboard management
-      const response = await fetch(`${B}/products?limit=100&includeInactive=true`)
+      const response = await fetch(`${B}/products?limit=100&includeInactive=true`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -178,6 +184,7 @@ export default function ProductsPage() {
     try {
       const response = await fetch(`${B}/products/${productToDelete}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -210,9 +217,7 @@ export default function ProductsPage() {
     try {
       const response = await fetch(`${B}/products/${product.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           isActive: !product.isActive,
         }),
@@ -264,18 +269,14 @@ export default function ProductsPage() {
         // Update existing product
         response = await fetch(`${B}/products/${editingProduct.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authHeaders(),
           body: JSON.stringify(payload),
         })
       } else {
         // Create new product
         response = await fetch(`${B}/products`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authHeaders(),
           body: JSON.stringify(payload),
         })
       }

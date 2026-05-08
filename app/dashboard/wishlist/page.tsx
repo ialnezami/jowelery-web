@@ -13,6 +13,15 @@ import { useCart } from '@/components/CartProvider'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+function authHeaders(extra?: Record<string, string>): HeadersInit {
+  const token = (window as any).__JWT
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra,
+  }
+}
+
 interface WishlistItem {
   id: string
   productId: string
@@ -57,7 +66,7 @@ export default function WishlistPage() {
   const fetchWishlist = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/wishlist`)
+      const response = await fetch(`${B}/wishlist`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setWishlistItems(data)
@@ -74,6 +83,7 @@ export default function WishlistPage() {
     try {
       const response = await fetch(`${B}/wishlist?productId=${productId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       })
       if (response.ok) {
         setWishlistItems(items => items.filter(item => item.id !== itemId))

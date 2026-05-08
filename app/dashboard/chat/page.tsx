@@ -9,6 +9,12 @@ import { MessageCircle, RefreshCw, Send, X, UserCheck } from 'lucide-react'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 interface ChatMessage {
   id: string
   role: 'USER' | 'AI' | 'AGENT'
@@ -61,7 +67,7 @@ export default function ChatDashboardPage() {
   const fetchSessions = async () => {
     try {
       const q = filter === 'ALL' ? '' : `?status=${filter}`
-      const res = await fetch(`${B}/chat/sessions${q}`)
+      const res = await fetch(`${B}/chat/sessions${q}`, { headers: authHeaders() })
       const data = await res.json()
       if (Array.isArray(data)) setSessions(data)
     } finally {
@@ -70,7 +76,7 @@ export default function ChatDashboardPage() {
   }
 
   const fetchSelected = async (id: string) => {
-    const res = await fetch(`${B}/chat/sessions/${id}`)
+    const res = await fetch(`${B}/chat/sessions/${id}`, { headers: authHeaders() })
     const data = await res.json()
     if (data.id) {
       setSelectedSession(data)
@@ -97,7 +103,7 @@ export default function ChatDashboardPage() {
 
   const handleClaim = async () => {
     if (!selectedId) return
-    await fetch(`${B}/chat/sessions/${selectedId}/claim`, { method: 'PUT' })
+    await fetch(`${B}/chat/sessions/${selectedId}/claim`, { method: 'PUT', headers: authHeaders() })
     await fetchSelected(selectedId)
     await fetchSessions()
   }
@@ -108,7 +114,7 @@ export default function ChatDashboardPage() {
     try {
       await fetch(`${B}/chat/sessions/${selectedId}/reply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ message: reply.trim() }),
       })
       setReply('')

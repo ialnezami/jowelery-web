@@ -10,6 +10,13 @@ import { useToast } from '@/hooks/use-toast'
 import { SingleImageUpload } from '@/components/SingleImageUpload'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
+const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+})
+
 import {
   Dialog,
   DialogContent,
@@ -175,7 +182,7 @@ export default function SettingsPage() {
   const fetchShop = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/shops?adminId=${session?.user.id}`)
+      const response = await fetch(`${B}/shops?adminId=${session?.user.id}`, { headers: authHeaders() })
       if (response.ok) {
         const shopData = await response.json()
         if (shopData) {
@@ -209,7 +216,7 @@ export default function SettingsPage() {
   const fetchSystemConfig = async () => {
     try {
       setConfigLoading(true)
-      const response = await fetch(`${B}/admin/config`)
+      const response = await fetch(`${B}/admin/config`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
         setSystemConfig(data)
@@ -225,7 +232,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`${B}/admin/config`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(newConfig),
       })
 
@@ -253,11 +260,11 @@ export default function SettingsPage() {
       setLoading(true)
       setError('')
       const [shopsRes, usersRes] = await Promise.all([
-        fetch(`${B}/shops`).catch(err => {
+        fetch(`${B}/shops`, { headers: authHeaders() }).catch(err => {
           console.error('Error fetching shops:', err)
           return { ok: false, json: async () => ({ error: 'Failed to fetch shops' }) }
         }),
-        fetch(`${B}/users?role=SHOP_ADMIN`).catch(err => {
+        fetch(`${B}/users?role=SHOP_ADMIN`, { headers: authHeaders() }).catch(err => {
           console.error('Error fetching users:', err)
           return { ok: false, json: async () => ({ error: 'Failed to fetch users' }) }
         }),
@@ -323,9 +330,7 @@ export default function SettingsPage() {
 
       const response = await fetch(`${B}/shops/${shop.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           name: shopFormData.name,
           description: shopFormData.description || null,
@@ -371,9 +376,7 @@ export default function SettingsPage() {
 
       const response = await fetch(`${B}/shops`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           name: formData.shopName,
           adminId: formData.adminId,
@@ -432,9 +435,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`${B}/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           name: formData.adminName,
           email: formData.adminEmail,
@@ -503,9 +504,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`${B}/shops/${editingShop.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           name: editShopData.name,
           description: editShopData.description || null,
@@ -569,9 +568,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`${B}/users?id=${editingShop.adminId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           name: editManagerData.name,
           email: editManagerData.email,
@@ -593,7 +590,7 @@ export default function SettingsPage() {
       fetchData()
       // Refresh the shop data
       if (editingShop) {
-        const shopResponse = await fetch(`${B}/shops/${editingShop.id}`)
+        const shopResponse = await fetch(`${B}/shops/${editingShop.id}`, { headers: authHeaders() })
         if (shopResponse.ok) {
           const shopData = await shopResponse.json()
           handleEditShop(shopData)
@@ -618,6 +615,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`${B}/shops/${shopToDelete}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       })
 
       if (response.ok) {
