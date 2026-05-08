@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Sparkles, Link as LinkIcon, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Product {
   id: string
   name: string

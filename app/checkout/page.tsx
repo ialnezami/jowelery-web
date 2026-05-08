@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -119,7 +121,7 @@ export default function CheckoutPage() {
 
   const fetchConfig = async () => {
     try {
-      const response = await fetch(`${B}/config')
+      const response = await fetch(`${B}/config`)
       if (response.ok) {
         const config = await response.json()
         if (config.paymentMethods) {
@@ -146,7 +148,7 @@ export default function CheckoutPage() {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${B}/cart')
+      const response = await fetch(`${B}/cart`)
       if (response.ok) {
         const data = await response.json()
         setCartItems(data)
@@ -206,7 +208,7 @@ export default function CheckoutPage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`${B}/users/profile')
+      const response = await fetch(`${B}/users/profile`)
       if (response.ok) {
         const profile = await response.json()
         setUserProfile(profile)
@@ -229,7 +231,7 @@ export default function CheckoutPage() {
 
   const fetchAddresses = async () => {
     try {
-      const response = await fetch(`${B}/addresses')
+      const response = await fetch(`${B}/addresses`)
       if (response.ok) {
         const data = await response.json()
         setAddresses(data)
@@ -258,7 +260,7 @@ export default function CheckoutPage() {
 
   const fetchRecipients = async () => {
     try {
-      const response = await fetch(`${B}/recipients')
+      const response = await fetch(`${B}/recipients`)
       if (response.ok) {
         const data = await response.json()
         setRecipients(data)
@@ -459,7 +461,7 @@ export default function CheckoutPage() {
 
     setSavingAddress(true)
     try {
-      const response = await fetch(`${B}/addresses', {
+      const response = await fetch(`${B}/addresses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -521,7 +523,7 @@ export default function CheckoutPage() {
 
     setSavingRecipient(true)
     try {
-      const response = await fetch(`${B}/recipients', {
+      const response = await fetch(`${B}/recipients`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -627,7 +629,7 @@ export default function CheckoutPage() {
       }
 
       // Create order first
-      const orderResponse = await fetch(`${B}/orders', {
+      const orderResponse = await fetch(`${B}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -660,7 +662,7 @@ export default function CheckoutPage() {
       if (formData.paymentMethod === 'card') {
         const returnUrl = `${window.location.origin}/checkout?orderId=${order.id}`
 
-        const paymentSessionResponse = await fetch(`${B}/payments/sessions', {
+        const paymentSessionResponse = await fetch(`${B}/payments/sessions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -716,7 +718,7 @@ export default function CheckoutPage() {
   const handlePaymentComplete = async (result: any) => {
     try {
       // Verify payment result with backend
-      const response = await fetch(`${B}/payments/result', {
+      const response = await fetch(`${B}/payments/result`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

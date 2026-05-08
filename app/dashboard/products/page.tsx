@@ -22,6 +22,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Product {
   id: string
   name: string
@@ -96,7 +98,7 @@ export default function ProductsPage() {
 
   const fetchGoldRates = async () => {
     try {
-      const response = await fetch(`${B}/gold-rates')
+      const response = await fetch(`${B}/gold-rates`)
       if (response.ok) {
         const data = await response.json()
         const rates: Record<string, number> = {}
@@ -116,7 +118,7 @@ export default function ProductsPage() {
     try {
       setLoading(true)
       // Include inactive products for dashboard management
-      const response = await fetch(`${B}/products?limit=100&includeInactive=true')
+      const response = await fetch(`${B}/products?limit=100&includeInactive=true`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -269,7 +271,7 @@ export default function ProductsPage() {
         })
       } else {
         // Create new product
-        response = await fetch(`${B}/products', {
+        response = await fetch(`${B}/products`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

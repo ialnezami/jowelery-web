@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
 import { addToGuestCart } from '@/lib/guest-cart'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Product {
   id: string
   name: string
@@ -104,7 +106,7 @@ export default function ProductsPage() {
 
     try {
       setAddingToCart(productId)
-      const response = await fetch(`${B}/cart', {
+      const response = await fetch(`${B}/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

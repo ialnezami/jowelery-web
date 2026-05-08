@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -63,7 +65,7 @@ export default function ResetPasswordPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`${B}/auth/reset-password', {
+      const response = await fetch(`${B}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

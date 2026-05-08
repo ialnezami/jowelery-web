@@ -10,6 +10,8 @@ import Image from 'next/image'
 import { ArrowLeft, Download, Package } from 'lucide-react'
 import { OrderTimeline } from '@/components/OrderTimeline'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Order {
   id: string
   orderNumber: string

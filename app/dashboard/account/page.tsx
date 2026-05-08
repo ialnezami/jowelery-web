@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { User, Mail, Lock, Phone, CheckCircle, AlertCircle, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface UserProfile {
   id: string
   name: string | null
@@ -91,7 +93,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (status !== 'authenticated') return
-    fetch(`${B}/users/profile')
+    fetch(`${B}/users/profile`)
       .then(r => r.json())
       .then((data: UserProfile) => {
         setProfile(data)
@@ -110,7 +112,7 @@ export default function AccountPage() {
     setInfoSaving(true)
     setInfoStatus(null)
     try {
-      const res = await fetch(`${B}/users/profile', {
+      const res = await fetch(`${B}/users/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), phone: phone.trim() || undefined }),
@@ -139,7 +141,7 @@ export default function AccountPage() {
     setEmailSaving(true)
     setEmailStatus(null)
     try {
-      const res = await fetch(`${B}/users/change-email', {
+      const res = await fetch(`${B}/users/change-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword: emailPassword, newEmail: newEmail.trim() }),
@@ -173,7 +175,7 @@ export default function AccountPage() {
     setPwdSaving(true)
     setPwdStatus(null)
     try {
-      const res = await fetch(`${B}/users/change-password', {
+      const res = await fetch(`${B}/users/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),

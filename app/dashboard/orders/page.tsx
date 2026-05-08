@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { Package, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { OrderTimeline } from '@/components/OrderTimeline'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Order {
   id: string
   orderNumber: string
@@ -47,7 +49,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${B}/orders')
+      const response = await fetch(`${B}/orders`)
       if (response.ok) {
         const data = await response.json()
         setOrders(data)

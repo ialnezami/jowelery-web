@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -113,7 +115,7 @@ export default function CartPage() {
     try {
       setLoading(true)
       setIsGuestCart(false)
-      const response = await fetch(`${B}/cart')
+      const response = await fetch(`${B}/cart`)
       if (response.ok) {
         const data = await response.json()
         setCartItems(data)
@@ -144,7 +146,7 @@ export default function CartPage() {
     
     try {
       setUpdating(productId)
-      const response = await fetch(`${B}/cart', {
+      const response = await fetch(`${B}/cart`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

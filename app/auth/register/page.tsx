@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,7 +37,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`${B}/auth/register', {
+      const response = await fetch(`${B}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

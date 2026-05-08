@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,7 +21,7 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`${B}/auth/forgot-password', {
+      const response = await fetch(`${B}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

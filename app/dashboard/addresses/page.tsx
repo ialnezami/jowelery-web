@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, MapPin, X, Star } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Address {
   id: string
   firstName: string
@@ -63,7 +65,7 @@ export default function AddressesPage() {
   const fetchAddresses = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/addresses')
+      const response = await fetch(`${B}/addresses`)
       if (response.ok) {
         const data = await response.json()
         setAddresses(data)
@@ -209,7 +211,7 @@ export default function AddressesPage() {
           body: JSON.stringify(payload),
         })
       } else {
-        response = await fetch(`${B}/addresses', {
+        response = await fetch(`${B}/addresses`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

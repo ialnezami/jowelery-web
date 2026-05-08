@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Store, MapPin, Phone, Mail, Sparkles, ArrowLeft } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Shop {
   id: string
   name: string

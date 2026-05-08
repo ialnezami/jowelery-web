@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { DollarSign, RefreshCw, Save, ArrowLeft, Clock, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface GoldRate {
   karat: string
   rate: number
@@ -43,7 +45,7 @@ export default function GoldRatesPage() {
   const fetchGoldRates = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/gold-rates')
+      const response = await fetch(`${B}/gold-rates`)
       if (response.ok) {
         const data = await response.json()
         setGoldRates(data)
@@ -75,7 +77,7 @@ export default function GoldRatesPage() {
   const handleSyncRates = async () => {
     try {
       setSyncing(true)
-      const response = await fetch(`${B}/gold-rates/sync', {
+      const response = await fetch(`${B}/gold-rates/sync`, {
         method: 'POST',
       })
 
@@ -120,7 +122,7 @@ export default function GoldRatesPage() {
 
     try {
       setSaving(true)
-      const response = await fetch(`${B}/gold-rates', {
+      const response = await fetch(`${B}/gold-rates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

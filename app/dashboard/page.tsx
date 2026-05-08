@@ -18,7 +18,9 @@ import {
   MapPin,
   User,
   MessageCircle,
-  UserCog
+  UserCog,
+  Tag,
+  Banknote
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -239,6 +241,21 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </Link>
+          <Link href="/dashboard/customers">
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Customers</h3>
+                    <p className="text-sm text-gray-600">View shop customers</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
           <Link href="/dashboard/account">
             <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
               <CardContent className="p-6">
@@ -329,6 +346,51 @@ export default function DashboardPage() {
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-1">Live Chat</h3>
                     <p className="text-sm text-gray-600">Respond to customer chats</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/dashboard/coupons">
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center">
+                    <Tag className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Coupons</h3>
+                    <p className="text-sm text-gray-600">Manage discount coupons</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/dashboard/customers">
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Customers</h3>
+                    <p className="text-sm text-gray-600">View all platform customers</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/dashboard/payouts">
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center">
+                    <Banknote className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Payouts</h3>
+                    <p className="text-sm text-gray-600">Manage shop commission payouts</p>
                   </div>
                 </div>
               </CardContent>

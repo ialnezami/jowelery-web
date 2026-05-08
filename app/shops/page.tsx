@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Store, Sparkles, MapPin, Phone, Mail, TrendingUp, Star, ArrowRight, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Shop {
   id: string
   name: string
@@ -53,7 +55,7 @@ export default function ShopsPage() {
   const fetchShops = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/shops?status=ACTIVE')
+      const response = await fetch(`${B}/shops?status=ACTIVE`)
       if (response.ok) {
         const data = await response.json()
         setShops(data)

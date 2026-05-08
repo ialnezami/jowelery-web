@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
 import { addToGuestCart } from '@/lib/guest-cart'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Product {
   id: string
   name: string
@@ -82,7 +84,7 @@ export default function ProductDetailPage() {
     if (!session || session.user.role !== 'CLIENT') return
     
     try {
-      const response = await fetch(`${B}/wishlist')
+      const response = await fetch(`${B}/wishlist`)
       if (response.ok) {
         const wishlist = await response.json()
         setIsInWishlist(wishlist.some((item: any) => item.productId === params.id))
@@ -131,7 +133,7 @@ export default function ProductDetailPage() {
         }
       } else {
         // Add to wishlist
-        const response = await fetch(`${B}/wishlist', {
+        const response = await fetch(`${B}/wishlist`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ productId: params.id }),
@@ -189,7 +191,7 @@ export default function ProductDetailPage() {
 
     try {
       setAddingToCart(true)
-      const response = await fetch(`${B}/cart', {
+      const response = await fetch(`${B}/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

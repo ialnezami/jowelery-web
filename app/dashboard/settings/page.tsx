@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { SingleImageUpload } from '@/components/SingleImageUpload'
+
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 import {
   Dialog,
   DialogContent,
@@ -207,7 +209,7 @@ export default function SettingsPage() {
   const fetchSystemConfig = async () => {
     try {
       setConfigLoading(true)
-      const response = await fetch(`${B}/admin/config')
+      const response = await fetch(`${B}/admin/config`)
       if (response.ok) {
         const data = await response.json()
         setSystemConfig(data)
@@ -221,7 +223,7 @@ export default function SettingsPage() {
 
   const handleUpdateConfig = async (newConfig: Partial<SystemConfig>) => {
     try {
-      const response = await fetch(`${B}/admin/config', {
+      const response = await fetch(`${B}/admin/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig),
@@ -251,11 +253,11 @@ export default function SettingsPage() {
       setLoading(true)
       setError('')
       const [shopsRes, usersRes] = await Promise.all([
-        fetch(`${B}/shops').catch(err => {
+        fetch(`${B}/shops`).catch(err => {
           console.error('Error fetching shops:', err)
           return { ok: false, json: async () => ({ error: 'Failed to fetch shops' }) }
         }),
-        fetch(`${B}/users?role=SHOP_ADMIN').catch(err => {
+        fetch(`${B}/users?role=SHOP_ADMIN`).catch(err => {
           console.error('Error fetching users:', err)
           return { ok: false, json: async () => ({ error: 'Failed to fetch users' }) }
         }),
@@ -367,7 +369,7 @@ export default function SettingsPage() {
       // This validation is no longer needed since manager is created in step 2
       // Shop creation happens together with manager creation
 
-      const response = await fetch(`${B}/shops', {
+      const response = await fetch(`${B}/shops`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -428,7 +430,7 @@ export default function SettingsPage() {
     setSubmitting(true)
 
     try {
-      const response = await fetch(`${B}/auth/register', {
+      const response = await fetch(`${B}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1199,7 +1201,7 @@ export default function SettingsPage() {
 
               try {
                 // First create the manager
-                const adminResponse = await fetch(`${B}/auth/register', {
+                const adminResponse = await fetch(`${B}/auth/register`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -1223,7 +1225,7 @@ export default function SettingsPage() {
                 const managerId = adminData.user?.id || adminData.id
 
                 // Then create the shop with the new manager
-                const shopResponse = await fetch(`${B}/shops', {
+                const shopResponse = await fetch(`${B}/shops`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',

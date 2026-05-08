@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, User, X, Star } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface Recipient {
   id: string
   firstName: string
@@ -55,7 +57,7 @@ export default function RecipientsPage() {
   const fetchRecipients = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/recipients')
+      const response = await fetch(`${B}/recipients`)
       if (response.ok) {
         const data = await response.json()
         setRecipients(data)
@@ -189,7 +191,7 @@ export default function RecipientsPage() {
           body: JSON.stringify(payload),
         })
       } else {
-        response = await fetch(`${B}/recipients', {
+        response = await fetch(`${B}/recipients`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

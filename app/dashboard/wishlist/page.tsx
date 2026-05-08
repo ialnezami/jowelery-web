@@ -11,6 +11,8 @@ import { Heart, ArrowLeft, ShoppingCart, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
 
+const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+
 interface WishlistItem {
   id: string
   productId: string
@@ -55,7 +57,7 @@ export default function WishlistPage() {
   const fetchWishlist = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${B}/wishlist')
+      const response = await fetch(`${B}/wishlist`)
       if (response.ok) {
         const data = await response.json()
         setWishlistItems(data)
@@ -97,7 +99,7 @@ export default function WishlistPage() {
   const handleAddToCart = async (productId: string) => {
     setAddingToCart(productId)
     try {
-      const response = await fetch(`${B}/cart', {
+      const response = await fetch(`${B}/cart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, quantity: 1 }),
