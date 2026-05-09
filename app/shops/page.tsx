@@ -58,8 +58,9 @@ export default function ShopsPage() {
       const response = await fetch(`${B}/shops?status=ACTIVE`)
       if (response.ok) {
         const data = await response.json()
-        setShops(data)
-        setFilteredShops(data)
+        const list = Array.isArray(data) ? data : (data.shops ?? [])
+        setShops(list)
+        setFilteredShops(list)
       }
     } catch (error) {
       console.error('Error fetching shops:', error)

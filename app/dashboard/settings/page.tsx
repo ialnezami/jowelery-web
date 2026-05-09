@@ -308,7 +308,7 @@ export default function SettingsPage() {
 
       if (shopsRes?.ok) {
         const shopsData = await shopsRes.json().catch(() => [])
-        setShops(Array.isArray(shopsData) ? shopsData : [])
+        setShops(Array.isArray(shopsData) ? shopsData : (shopsData.shops ?? []))
       } else if (shopsRes) {
         const errData = await shopsRes.json().catch(() => ({}))
         if (errData.error === 'Unauthorized') {
@@ -339,9 +339,10 @@ export default function SettingsPage() {
       const response = await fetch(`${B}/gold-rates`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
-        setGoldRates(data)
+        const rates = (Array.isArray(data) ? data : Object.values(data)) as GoldRate[]
+        setGoldRates(rates)
         const editing: Record<string, string> = {}
-        data.forEach((rate: GoldRate) => {
+        rates.forEach((rate: GoldRate) => {
           editing[rate.karat] = rate.rate.toFixed(2)
         })
         setEditingRates(editing)
@@ -1337,9 +1338,9 @@ export default function SettingsPage() {
                           <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                             <div className="flex items-center gap-1">
                               <Mail className="h-4 w-4" />
-                              <span>{shopItem.admin.email}</span>
+                              <span>{shopItem.admin?.email}</span>
                             </div>
-                            {shopItem.admin.name && (
+                            {shopItem.admin?.name && (
                               <div className="flex items-center gap-1">
                                 <Users className="h-4 w-4" />
                                 <span>{shopItem.admin.name}</span>
@@ -1692,7 +1693,7 @@ export default function SettingsPage() {
                   // Step 2: create shop with manager
                   const shopResponse = await fetch(`${B}/shops`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       name: formData.shopName,
                       adminId: managerId,

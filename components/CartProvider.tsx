@@ -6,12 +6,6 @@ import { getGuestCart, getGuestCartCount, clearGuestCart } from '@/lib/guest-car
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
-const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-})
-
 interface CartContextType {
   cartCount: number
   refreshCart: () => Promise<void>
@@ -28,91 +22,85 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession()
   const [cartCount, setCartCount] = useState(0)
 
+  const apiToken = (session as any)?.apiToken as string | undefined
+
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {}),
+  })
+
   const refreshCart = async () => {
-    if (!session) {
-      // For guest users, get count from localStorage
-      const guestCount = getGuestCartCount()
-      setCartCount(guestCount)
+    if (!session || !apiToken) {
+      setCartCount(getGuestCartCount())
       return
     }
-
     try {
-      const response = await fetch(`${B}/cart`, {
-        headers: authHeaders(),
-      })
-      if (response.ok) {
-        const cartItems = await response.json()
-        const items = cartItems?.data ?? cartItems
-        const totalItems = Array.isArray(items)
-          ? items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-          : 0
-        setCartCount(totalItems)
+      const res = await fetch(`${B}/cart`, { headers: authHeaders() })
+      if (res.ok) {
+        const body = await res.json()
+        const items = body?.data ?? body
+        setCartCount(
+          Array.isArray(items)
+            ? items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+            : 0
+        )
       } else {
         setCartCount(0)
       }
-    } catch (error) {
-      console.error('Error fetching cart count:', error)
+    } catch {
       setCartCount(0)
     }
   }
 
   const mergeGuestCart = async () => {
-    if (!session || status !== 'authenticated') return
+    if (!session || status !== 'authenticated' || !apiToken) return
 
     const guestCart = getGuestCart()
+
     if (guestCart.length === 0) {
-      refreshCart()
+      await refreshCart()
       return
     }
 
     try {
-      const response = await fetch(`${B}/cart/merge`, {
+      const res = await fetch(`${B}/cart/merge`, {
         method: 'PUT',
         headers: authHeaders(),
-        body: JSON.stringify({
-          items: guestCart,
-        }),
+        body: JSON.stringify({ items: guestCart }),
       })
-
-      if (response.ok) {
+      if (res.ok) {
         clearGuestCart()
-        await refreshCart()
+      } else {
+        // Merge failed — still clear guest cart so stale count doesn't persist
+        clearGuestCart()
       }
-    } catch (error) {
-      console.error('Error merging guest cart:', error)
+    } catch {
+      clearGuestCart()
     }
+    await refreshCart()
   }
 
   useEffect(() => {
     if (status === 'loading') return
 
-    if (session) {
-      // User is logged in - merge guest cart if exists, then refresh
+    if (session && apiToken) {
       mergeGuestCart()
-    } else {
-      // Guest user - get count from localStorage
-      const guestCount = getGuestCartCount()
-      setCartCount(guestCount)
+    } else if (!session) {
+      setCartCount(getGuestCartCount())
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, status])
+  }, [session, status, apiToken])
 
-  // Also listen for localStorage changes (for guest cart updates)
+  // Listen for localStorage changes for guest cart (same-tab updates)
   useEffect(() => {
-    if (!session) {
-      const handleStorageChange = () => {
-        const guestCount = getGuestCartCount()
-        setCartCount(guestCount)
-      }
+    if (session) return
 
-      window.addEventListener('storage', handleStorageChange)
-      // Also check periodically for same-tab updates
-      const interval = setInterval(handleStorageChange, 500)
-
-      return () => {
-        window.removeEventListener('storage', handleStorageChange)
-        clearInterval(interval)
-      }
+    const handleStorageChange = () => setCartCount(getGuestCartCount())
+    window.addEventListener('storage', handleStorageChange)
+    const interval = setInterval(handleStorageChange, 500)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
     }
   }, [session])
 

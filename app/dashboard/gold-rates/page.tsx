@@ -54,10 +54,11 @@ export default function GoldRatesPage() {
       const response = await fetch(`${B}/gold-rates`, { headers: authHeaders() })
       if (response.ok) {
         const data = await response.json()
-        setGoldRates(data)
+        const rates = (Array.isArray(data) ? data : Object.values(data)) as GoldRate[]
+        setGoldRates(rates)
         // Initialize editing rates with current values
         const editing: Record<string, string> = {}
-        data.forEach((rate: GoldRate) => {
+        rates.forEach((rate: GoldRate) => {
           editing[rate.karat] = rate.rate.toFixed(2)
         })
         setEditingRates(editing)
