@@ -205,7 +205,7 @@ export default function ShopsPage() {
                               <Sparkles className="h-4 w-4 text-white" />
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900">{shop._count.products}</p>
+                              <p className="font-bold text-gray-900">{shop._count?.products ?? 0}</p>
                               <p className="text-xs text-gray-500">{t('products')}</p>
                             </div>
                           </div>
