@@ -204,10 +204,12 @@ export default function ProductDetailPage() {
 
     try {
       setAddingToCart(true)
+      const token = getToken()
       const response = await fetch(`${B}/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           productId: product?.id,
