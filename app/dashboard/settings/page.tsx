@@ -1747,8 +1747,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
-                <Input
-                  type="password"
+                <PasswordInput
                   required
                   value={formData.adminPassword}
                   onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
@@ -2108,8 +2107,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
-              <Input
-                type="password"
+              <PasswordInput
                 required
                 value={newAdminData.password}
                 onChange={(e) => setNewAdminData({ ...newAdminData, password: e.target.value })}

@@ -144,10 +144,9 @@ export default function RegisterPage() {
                   <Lock className="h-4 w-4 text-amber-500" />
                   Password
                 </label>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   autoComplete="new-password"
                   required
                   placeholder="Create a password"
@@ -161,10 +160,9 @@ export default function RegisterPage() {
                   <Lock className="h-4 w-4 text-amber-500" />
                   Confirm Password
                 </label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
                   name="confirmPassword"
-                  type="password"
                   autoComplete="new-password"
                   required
                   placeholder="Confirm your password"

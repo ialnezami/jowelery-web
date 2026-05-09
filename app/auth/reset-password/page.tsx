@@ -170,10 +170,9 @@ export default function ResetPasswordPage() {
                     <Lock className="h-4 w-4 text-amber-500" />
                     New Password
                   </label>
-                  <Input
+                  <PasswordInput
                     id="password"
                     name="password"
-                    type="password"
                     autoComplete="new-password"
                     required
                     placeholder="Enter new password"
@@ -186,10 +185,9 @@ export default function ResetPasswordPage() {
                     <Lock className="h-4 w-4 text-amber-500" />
                     Confirm Password
                   </label>
-                  <Input
+                  <PasswordInput
                     id="confirmPassword"
                     name="confirmPassword"
-                    type="password"
                     autoComplete="new-password"
                     required
                     placeholder="Confirm new password"

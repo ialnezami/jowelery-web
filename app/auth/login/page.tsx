@@ -101,10 +101,9 @@ function LoginForm() {
                   <Lock className="h-4 w-4 text-amber-500" />
                   {t('password')}
                 </label>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   autoComplete="current-password"
                   required
                   placeholder={t('password')}

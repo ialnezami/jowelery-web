@@ -305,8 +305,7 @@ export default function AccountPage() {
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Current Password
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={emailPassword}
                 onChange={e => setEmailPassword(e.target.value)}
                 placeholder="Confirm with your password"
@@ -330,8 +329,7 @@ export default function AccountPage() {
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Current Password
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={currentPwd}
                 onChange={e => setCurrentPwd(e.target.value)}
                 placeholder="Current password"
@@ -341,8 +339,7 @@ export default function AccountPage() {
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 New Password
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={newPwd}
                 onChange={e => setNewPwd(e.target.value)}
                 placeholder="Min 8 characters"
@@ -352,8 +349,7 @@ export default function AccountPage() {
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Confirm New Password
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={confirmPwd}
                 onChange={e => setConfirmPwd(e.target.value)}
                 placeholder="Repeat new password"
