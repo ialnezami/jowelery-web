@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useCart } from './CartProvider'
 import { CurrencySwitcher } from './CurrencySwitcher'
@@ -17,6 +18,21 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const t = useTranslations('common')
   const locale = useLocale()
+  const router = useRouter()
+  const pathname = usePathname()
+  const isShopAdmin = session?.user?.role === 'SHOP_ADMIN'
+  const onDashboard = pathname?.startsWith('/dashboard')
+
+  const isSellerMode = useCallback(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('jowelery:sellerMode') === 'true'
+  }, [])
+
+  const toggleSellerMode = useCallback(() => {
+    const next = !isSellerMode()
+    localStorage.setItem('jowelery:sellerMode', String(next))
+    router.push(next ? '/dashboard/seller' : '/dashboard')
+  }, [isSellerMode, router])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-amber-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -59,6 +75,20 @@ export function Header() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
+            {isShopAdmin && onDashboard && (
+              <button
+                onClick={toggleSellerMode}
+                className="hidden sm:flex items-center gap-0 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold overflow-hidden"
+                title="Switch mode"
+              >
+                <span className={`px-3 py-1.5 transition-colors ${!isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700 hover:bg-amber-100'}`}>
+                  Admin
+                </span>
+                <span className={`px-3 py-1.5 transition-colors ${isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700 hover:bg-amber-100'}`}>
+                  Seller
+                </span>
+              </button>
+            )}
             <CurrencySwitcher />
             <LanguageSwitcher />
 
@@ -129,6 +159,19 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-amber-100 bg-white animate-slide-up">
           <div className="container mx-auto px-4 py-4 space-y-2">
+            {isShopAdmin && onDashboard && (
+              <button
+                onClick={() => { toggleSellerMode(); setMobileMenuOpen(false) }}
+                className="flex items-center gap-0 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold overflow-hidden mx-4 my-2 w-fit"
+              >
+                <span className={`px-3 py-1.5 transition-colors ${!isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700'}`}>
+                  Admin
+                </span>
+                <span className={`px-3 py-1.5 transition-colors ${isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700'}`}>
+                  Seller
+                </span>
+              </button>
+            )}
             <Link
               href="/shops"
               className="block px-4 py-2 text-gray-700 hover:bg-amber-50 hover:text-amber-600 rounded-lg transition-colors"
