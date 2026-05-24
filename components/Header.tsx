@@ -7,7 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useCart } from './CartProvider'
 import { CurrencySwitcher } from './CurrencySwitcher'
@@ -23,16 +23,17 @@ export function Header() {
   const isShopAdmin = session?.user?.role === 'SHOP_ADMIN'
   const onDashboard = pathname?.startsWith('/dashboard')
 
-  const isSellerMode = useCallback(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem('jowelery:sellerMode') === 'true'
+  const [sellerMode, setSellerMode] = useState(false)
+  useEffect(() => {
+    setSellerMode(localStorage.getItem('jowelery:sellerMode') === 'true')
   }, [])
 
   const toggleSellerMode = useCallback(() => {
-    const next = !isSellerMode()
+    const next = !sellerMode
     localStorage.setItem('jowelery:sellerMode', String(next))
+    setSellerMode(next)
     router.push(next ? '/dashboard/seller' : '/dashboard')
-  }, [isSellerMode, router])
+  }, [sellerMode, router])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-amber-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -81,10 +82,10 @@ export function Header() {
                 className="hidden sm:flex items-center gap-0 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold overflow-hidden"
                 title="Switch mode"
               >
-                <span className={`px-3 py-1.5 transition-colors ${!isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700 hover:bg-amber-100'}`}>
+                <span className={`px-3 py-1.5 transition-colors ${!sellerMode ? 'bg-amber-600 text-white' : 'text-amber-700 hover:bg-amber-100'}`}>
                   Admin
                 </span>
-                <span className={`px-3 py-1.5 transition-colors ${isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700 hover:bg-amber-100'}`}>
+                <span className={`px-3 py-1.5 transition-colors ${sellerMode ? 'bg-amber-600 text-white' : 'text-amber-700 hover:bg-amber-100'}`}>
                   Seller
                 </span>
               </button>
@@ -164,10 +165,10 @@ export function Header() {
                 onClick={() => { toggleSellerMode(); setMobileMenuOpen(false) }}
                 className="flex items-center gap-0 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold overflow-hidden mx-4 my-2 w-fit"
               >
-                <span className={`px-3 py-1.5 transition-colors ${!isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700'}`}>
+                <span className={`px-3 py-1.5 transition-colors ${!sellerMode ? 'bg-amber-600 text-white' : 'text-amber-700'}`}>
                   Admin
                 </span>
-                <span className={`px-3 py-1.5 transition-colors ${isSellerMode() ? 'bg-amber-600 text-white' : 'text-amber-700'}`}>
+                <span className={`px-3 py-1.5 transition-colors ${sellerMode ? 'bg-amber-600 text-white' : 'text-amber-700'}`}>
                   Seller
                 </span>
               </button>
