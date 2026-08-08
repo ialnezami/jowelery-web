@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { DollarSign, RefreshCw, Save, ArrowLeft, Clock, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
 const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined

@@ -23,6 +23,8 @@ import {
   Banknote
 } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()

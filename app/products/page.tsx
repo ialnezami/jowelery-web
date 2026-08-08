@@ -11,8 +11,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sparkles, Filter, SlidersHorizontal, ShoppingCart, Heart } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useCurrency } from '@/hooks/useCurrency'
 import { useCart } from '@/components/CartProvider'
 import { addToGuestCart } from '@/lib/guest-cart'
+
+export const dynamic = 'force-dynamic'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
@@ -40,6 +43,7 @@ export default function ProductsPage() {
   const { data: session, status } = useSession()
   const { toast } = useToast()
   const { refreshCart } = useCart()
+  const { format } = useCurrency()
   const t = useTranslations('products')
   const tCommon = useTranslations('common')
   const [products, setProducts] = useState<Product[]>([])
@@ -409,7 +413,7 @@ export default function ProductsPage() {
                         </p>
                         <div className="flex items-baseline justify-between mb-4">
                           <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                            ${product.finalPrice.toFixed(2)}
+                            {format(product.finalPrice)}
                           </p>
                           <p className="text-sm text-gray-500">{product.shop.name}</p>
                         </div>

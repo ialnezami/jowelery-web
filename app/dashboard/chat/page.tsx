@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MessageCircle, RefreshCw, Send, X, UserCheck } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
 const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined

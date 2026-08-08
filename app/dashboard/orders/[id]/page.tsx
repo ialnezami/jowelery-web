@@ -35,6 +35,8 @@ import {
 } from 'lucide-react'
 import { OrderTimeline } from '@/components/OrderTimeline'
 
+export const dynamic = 'force-dynamic'
+
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
 /** Statuses where the client is still allowed to cancel */

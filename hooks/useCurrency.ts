@@ -3,60 +3,78 @@
 import { useEffect, useState, useCallback } from 'react'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$',
-  KWD: 'د.ك',
-  AED: 'د.إ',
-}
-
-const FALLBACK_RATES: Record<string, number> = { USD: 1.0, KWD: 0.3077, AED: 3.67 }
 const CACHE_TTL_MS = 3600 * 1000
 
-let _cachedRates: Record<string, number> | null = null
+interface CurrencyRecord {
+  code: string
+  symbol: string
+  exchangeRateToBase: number
+}
+
+let _cached: CurrencyRecord[] | null = null
 let _cacheTime = 0
 
-async function fetchRates(): Promise<Record<string, number>> {
-  if (_cachedRates && Date.now() - _cacheTime < CACHE_TTL_MS) return _cachedRates
+const FALLBACK: CurrencyRecord[] = [
+  { code: 'USD', symbol: '$',    exchangeRateToBase: 1.0 },
+  { code: 'KWD', symbol: 'KWD', exchangeRateToBase: 0.31 },
+  { code: 'AED', symbol: 'AED', exchangeRateToBase: 3.67 },
+  { code: 'SAR', symbol: 'SAR', exchangeRateToBase: 3.75 },
+  { code: 'EUR', symbol: '€',   exchangeRateToBase: 0.92 },
+  { code: 'GBP', symbol: '£',   exchangeRateToBase: 0.79 },
+]
+
+async function fetchCurrencies(): Promise<CurrencyRecord[]> {
+  if (_cached && Date.now() - _cacheTime < CACHE_TTL_MS) return _cached
   try {
-    const res = await fetch(`${B}/currency/rates`)
-    if (!res.ok) throw new Error()
+    const res = await fetch(`${B}/currencies`, { next: { revalidate: 3600 } })
+    if (!res.ok) throw new Error(`currencies fetch failed: ${res.status}`)
     const json = await res.json()
-    _cachedRates = json.data ?? FALLBACK_RATES
+    const list: CurrencyRecord[] = Array.isArray(json) ? json : (json?.data ?? [])
+    if (list.length === 0) throw new Error('empty currencies response')
+    _cached = list
     _cacheTime = Date.now()
-    return _cachedRates!
+    return list
   } catch {
-    return FALLBACK_RATES
+    return FALLBACK
   }
 }
 
 export function useCurrency() {
+  const [currencies, setCurrencies] = useState<CurrencyRecord[]>(FALLBACK)
   const [currency, setCurrency] = useState('USD')
-  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES)
 
   useEffect(() => {
-    const saved = typeof window !== 'undefined'
-      ? localStorage.getItem('currencyPreference') ?? 'USD'
-      : 'USD'
+    const saved =
+      typeof window !== 'undefined'
+        ? (localStorage.getItem('currencyPreference') ?? 'USD')
+        : 'USD'
     setCurrency(saved)
-    fetchRates().then(setRates)
+    fetchCurrencies().then(setCurrencies)
 
-    const onCurrencyChanged = (e: Event) => {
-      setCurrency((e as CustomEvent<string>).detail)
+    const onChanged = (e: Event) => {
+      const code = (e as CustomEvent<string>).detail
+      setCurrency(code)
+      localStorage.setItem('currencyPreference', code)
     }
-    window.addEventListener('currencyChanged', onCurrencyChanged)
-    return () => window.removeEventListener('currencyChanged', onCurrencyChanged)
+    window.addEventListener('currencyChanged', onChanged)
+    return () => window.removeEventListener('currencyChanged', onChanged)
   }, [])
+
+  const activeCurrency = currencies.find(c => c.code === currency) ?? currencies[0]
 
   const format = useCallback(
     (usdAmount: number): string => {
-      const rate = rates[currency] ?? 1
-      const converted = usdAmount * rate
-      const symbol = CURRENCY_SYMBOLS[currency] ?? '$'
-      return `${symbol}${converted.toFixed(2)}`
+      if (!activeCurrency) return `$${usdAmount.toFixed(2)}`
+      const converted = usdAmount * activeCurrency.exchangeRateToBase
+      return `${activeCurrency.symbol} ${converted.toFixed(2)}`
     },
-    [currency, rates]
+    [activeCurrency]
   )
 
-  return { currency, symbol: CURRENCY_SYMBOLS[currency] ?? '$', format }
+  return {
+    currency,
+    currencies,
+    symbol: activeCurrency?.symbol ?? '$',
+    format,
+  }
 }

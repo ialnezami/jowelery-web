@@ -12,6 +12,9 @@ import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
 import { addToGuestCart } from '@/lib/guest-cart'
+import { useCurrency } from '@/hooks/useCurrency'
+
+export const dynamic = 'force-dynamic'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
@@ -45,6 +48,7 @@ export default function ProductDetailPage() {
   const { data: session, status } = useSession()
   const { toast } = useToast()
   const { refreshCart } = useCart()
+  const { format } = useCurrency()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
@@ -320,7 +324,7 @@ export default function ProductDetailPage() {
             <div className="flex-1">
               <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900">{product.name}</h1>
               <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent mb-6">
-                ${product.finalPrice.toFixed(2)}
+                {format(product.finalPrice)}
               </p>
             </div>
             {session?.user?.role === 'CLIENT' && (

@@ -16,6 +16,9 @@ import {
 } from '@/components/ui/dialog'
 import { Store, MapPin, Phone, Mail, Sparkles, ArrowLeft, Star, Trash2, Pencil } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useCurrency } from '@/hooks/useCurrency'
+
+export const dynamic = 'force-dynamic'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
@@ -133,6 +136,7 @@ export default function ShopDetailPage() {
   const params = useParams()
   const router = useRouter()
   const t = useTranslations('shops')
+  const { format } = useCurrency()
   const { data: session } = useSession()
 
   const [shop, setShop] = useState<Shop | null>(null)
@@ -422,7 +426,7 @@ export default function ShopDetailPage() {
                       {product.karat} • {product.weight}g • {product.category}
                     </p>
                     <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                      ${product.finalPrice.toFixed(2)}
+                      {format(product.finalPrice)}
                     </p>
                   </CardContent>
                 </Card>

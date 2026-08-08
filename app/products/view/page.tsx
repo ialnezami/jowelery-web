@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sparkles, Link as LinkIcon, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useCurrency } from '@/hooks/useCurrency'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
@@ -30,6 +31,7 @@ interface Product {
 function ProductsViewContent() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { format } = useCurrency()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [linkInput, setLinkInput] = useState('')
@@ -256,7 +258,7 @@ function ProductsViewContent() {
                       </p>
                       <div className="flex items-baseline justify-between">
                         <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                          ${product.finalPrice.toFixed(2)}
+                          {format(product.finalPrice)}
                         </p>
                         <p className="text-sm text-gray-500">{product.shop.name}</p>
                       </div>

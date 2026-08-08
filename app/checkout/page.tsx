@@ -20,6 +20,9 @@ import { ArrowLeft, CreditCard, Lock, User, MapPin, Save, MessageCircle } from '
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
 import { AdyenPayment } from '@/components/AdyenPayment'
+import { useCurrency } from '@/hooks/useCurrency'
+
+export const dynamic = 'force-dynamic'
 
 interface Address {
   id: string
@@ -57,6 +60,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { refreshCart, mergeGuestCart } = useCart()
+  const { format } = useCurrency()
   const [cartItems, setCartItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -1269,7 +1273,7 @@ export default function CheckoutPage() {
                       <p className="text-gray-500">Qty: {item.quantity}</p>
                     </div>
                     <p className="font-semibold">
-                      ${(item.product.finalPrice * item.quantity).toFixed(2)}
+                      {format(item.product.finalPrice * item.quantity)}
                     </p>
                   </div>
                 ))}
@@ -1277,7 +1281,7 @@ export default function CheckoutPage() {
               <div className="pt-4 border-t space-y-2">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-amber-600">${total.toFixed(2)}</span>
+                  <span className="text-amber-600">{format(total)}</span>
                 </div>
               </div>
               

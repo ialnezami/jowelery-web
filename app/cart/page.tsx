@@ -20,7 +20,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash2, ShoppingCart as ShoppingCartIcon, Plus, Minus, LogIn } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
+import { useCurrency } from '@/hooks/useCurrency'
 import { getGuestCart, updateGuestCartItem, removeFromGuestCart, clearGuestCart } from '@/lib/guest-cart'
+
+export const dynamic = 'force-dynamic'
 
 interface CartItem {
   id?: string
@@ -49,6 +52,7 @@ export default function CartPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { refreshCart, mergeGuestCart } = useCart()
+  const { format } = useCurrency()
   const t = useTranslations('cart')
   const tCommon = useTranslations('common')
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -345,7 +349,7 @@ export default function CartPage() {
                         </div>
                         <div className="flex items-center gap-4">
                           <p className="text-xl font-bold text-amber-600">
-                            ${(item.product.finalPrice * item.quantity).toFixed(2)}
+                            {format(item.product.finalPrice * item.quantity)}
                           </p>
                           <Button
                             variant="ghost"
@@ -373,12 +377,12 @@ export default function CartPage() {
                 <CardContent className="p-0 space-y-4">
                   <div className="flex justify-between text-muted-foreground">
                     <span>{tCommon('subtotal')} ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{format(total)}</span>
                   </div>
                   <div className="border-t border-border pt-4">
                     <div className="flex justify-between font-bold text-lg">
                       <span>{tCommon('total')}</span>
-                      <span className="text-amber-600">${total.toFixed(2)}</span>
+                      <span className="text-amber-600">{format(total)}</span>
                     </div>
                   </div>
                   <Button

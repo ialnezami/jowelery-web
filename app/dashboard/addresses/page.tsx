@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, MapPin, X, Star } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 
+export const dynamic = 'force-dynamic'
+
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
 const getToken = () => typeof window !== 'undefined' ? (window as any).__JWT as string | undefined : undefined

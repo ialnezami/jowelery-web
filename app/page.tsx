@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
+import { useCurrency } from '@/hooks/useCurrency'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -40,6 +41,7 @@ interface GoldRate {
 export default function Home() {
   const t = useTranslations('home')
   const tCommon = useTranslations('common')
+  const { format } = useCurrency()
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [goldRates, setGoldRates] = useState<GoldRate[]>([])
   const [loading, setLoading] = useState(true)
@@ -368,7 +370,7 @@ export default function Home() {
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <p className="text-2xl font-black bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                              ${product.finalPrice.toFixed(2)}
+                              {format(product.finalPrice)}
                             </p>
                           </div>
                           <div className="flex items-center gap-1">

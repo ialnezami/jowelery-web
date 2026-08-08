@@ -13,6 +13,8 @@ import Link from 'next/link'
 import { Sparkles, User, Mail, Lock, Building2 } from 'lucide-react'
 import { useCart } from '@/components/CartProvider'
 
+export const dynamic = 'force-dynamic'
+
 export default function RegisterPage() {
   const router = useRouter()
   const { mergeGuestCart } = useCart()

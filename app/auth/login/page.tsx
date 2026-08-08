@@ -12,6 +12,8 @@ import Link from 'next/link'
 import { Sparkles, Mail, Lock } from 'lucide-react'
 import { useCart } from '@/components/CartProvider'
 
+export const dynamic = 'force-dynamic'
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()

@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 
+export const dynamic = 'force-dynamic'
+
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
 interface Customer {

@@ -10,6 +10,9 @@ import Image from 'next/image'
 import { Heart, ArrowLeft, ShoppingCart, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
+import { useCurrency } from '@/hooks/useCurrency'
+
+export const dynamic = 'force-dynamic'
 
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
@@ -45,6 +48,7 @@ export default function WishlistPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { refreshCart } = useCart()
+  const { format } = useCurrency()
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([])
   const [loading, setLoading] = useState(true)
   const [removing, setRemoving] = useState<string | null>(null)
@@ -193,7 +197,7 @@ export default function WishlistPage() {
                   </h3>
                 </Link>
                 <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent mb-3">
-                  ${item.product.finalPrice.toFixed(2)}
+                  {format(item.product.finalPrice)}
                 </p>
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-xs text-gray-500">{item.product.shop.name}</span>

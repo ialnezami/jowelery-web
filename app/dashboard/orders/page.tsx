@@ -30,6 +30,8 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 const B = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
 
 const getToken = () =>
