@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useSession } from 'next-auth/react'
-import { ShoppingCart, Sparkles, Plus, Minus, Heart } from 'lucide-react'
+import { ShoppingCart, Sparkles, Plus, Minus, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 import { useCart } from '@/components/CartProvider'
@@ -282,20 +282,68 @@ export default function ProductDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
         {/* Product Images */}
         <div className="space-y-4">
-          <div className="aspect-square relative bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl overflow-hidden">
+          <div className="aspect-square relative bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl overflow-hidden group">
             {product.images && product.images.length > 0 ? (
               <Image
                 src={product.images[selectedImage] || product.images[0]}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-cover transition-opacity duration-300"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
                 <Sparkles className="h-24 w-24" />
               </div>
             )}
+
+            {/* Left arrow */}
+            {product.images && product.images.length > 1 && selectedImage > 0 && (
+              <button
+                onClick={() => setSelectedImage(i => i - 1)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Right arrow */}
+            {product.images && product.images.length > 1 && selectedImage < product.images.length - 1 && (
+              <button
+                onClick={() => setSelectedImage(i => i + 1)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
+                aria-label="Next image"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Dot indicators */}
+            {product.images && product.images.length > 1 && (
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+                {product.images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedImage(i)}
+                    className={`rounded-full transition-all ${
+                      i === selectedImage
+                        ? 'w-5 h-2 bg-white'
+                        : 'w-2 h-2 bg-white/50 hover:bg-white/75'
+                    }`}
+                    aria-label={`Go to image ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Counter */}
+            {product.images && product.images.length > 1 && (
+              <div className="absolute top-3 right-3 bg-black/40 text-white text-xs font-medium px-2 py-1 rounded-full">
+                {selectedImage + 1} / {product.images.length}
+              </div>
+            )}
           </div>
+
           {product.images && product.images.length > 1 && (
             <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {product.images.slice(0, 4).map((image, index) => (
