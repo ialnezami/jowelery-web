@@ -85,7 +85,7 @@ export default function WishlistPage() {
   const handleRemove = async (itemId: string, productId: string) => {
     setRemoving(itemId)
     try {
-      const response = await fetch(`${B}/wishlist?productId=${productId}`, {
+      const response = await fetch(`${B}/wishlist/${productId}`, {
         method: 'DELETE',
         headers: authHeaders(),
       })

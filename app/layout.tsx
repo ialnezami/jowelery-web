@@ -10,6 +10,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster'
 import { ChatBubble } from '@/components/chat/ChatBubble';
+import { GoldPriceTicker } from '@/components/GoldPriceTicker';
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] });
 
@@ -40,6 +41,7 @@ export default async function RootLayout({
             </div>
             <Toaster />
             <ChatBubble />
+            <GoldPriceTicker />
           </Providers>
         </NextIntlClientProvider>
       </body>
