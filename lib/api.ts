@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api';
+const CLIENT_KEY = process.env.NEXT_PUBLIC_CLIENT_KEY;
 
 type FetchOptions = RequestInit & { token?: string };
 
@@ -22,6 +23,7 @@ export async function serverApi(path: string, options: FetchOptions = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(CLIENT_KEY ? { 'X-Client-Key': CLIENT_KEY } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -45,6 +47,7 @@ export async function clientApi(path: string, options: FetchOptions = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(CLIENT_KEY ? { 'X-Client-Key': CLIENT_KEY } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
