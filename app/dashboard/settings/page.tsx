@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
+
+const ShopLocationMap = dynamic(
+  () => import('@/components/ShopLocationMap').then((m) => m.ShopLocationMap),
+  { ssr: false, loading: () => <div className="h-80 bg-gray-100 rounded-xl animate-pulse" /> }
+)
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -83,6 +89,8 @@ interface Shop {
   commissionRate: number
   status: string
   shippingMethods?: string[]
+  lat?: number | null
+  lng?: number | null
   admin: {
     id: string
     name: string | null
@@ -1065,6 +1073,26 @@ export default function SettingsPage() {
               </>
             )}
           </>
+        )}
+
+        {shopAdminTab === 'shop' && shop && (
+          <div className="bg-white rounded-2xl border p-6 space-y-4 mt-6">
+            <h2 className="text-lg font-semibold text-gray-800">Shop Location</h2>
+            <p className="text-sm text-gray-500">
+              Pin your shop on the map so clients can find you when selling used gold.
+            </p>
+            <ShopLocationMap
+              initialLat={shop.lat}
+              initialLng={shop.lng}
+              onSave={async (lat, lng) => {
+                await fetch(`${B}/shops/${shop.id}`, {
+                  method: 'PATCH',
+                  headers: authHeaders(),
+                  body: JSON.stringify({ lat, lng }),
+                })
+              }}
+            />
+          </div>
         )}
 
         {shopAdminTab === 'gold-rates' && <GoldRatesPanel />}

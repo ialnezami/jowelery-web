@@ -21,7 +21,8 @@ import {
   UserCog,
   Tag,
   Banknote,
-  Warehouse
+  Warehouse,
+  Coins
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -199,6 +200,21 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </Link>
+          <Link href="/dashboard/gold-offers">
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center">
+                    <Coins className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Gold Offers</h3>
+                    <p className="text-sm text-gray-600">Manage used gold purchase offers</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
           <Link href="/dashboard/analytics">
             <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
               <CardContent className="p-6">
@@ -334,6 +350,21 @@ export default function DashboardPage() {
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-1">All Orders</h3>
                     <p className="text-sm text-gray-600">View all orders</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/dashboard/gold-offers">
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover-lift h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center">
+                    <Coins className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Gold Offers</h3>
+                    <p className="text-sm text-gray-600">Manage used gold purchase offers</p>
                   </div>
                 </div>
               </CardContent>
