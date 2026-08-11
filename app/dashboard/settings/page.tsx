@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import nextDynamic from 'next/dynamic'
 
-const ShopLocationMap = dynamic(
+const ShopLocationMap = nextDynamic(
   () => import('@/components/ShopLocationMap').then((m) => m.ShopLocationMap),
   { ssr: false, loading: () => <div className="h-80 bg-gray-100 rounded-xl animate-pulse" /> }
 )
-import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
