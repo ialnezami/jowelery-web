@@ -3,6 +3,10 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 const API_URL = process.env.API_URL || 'http://localhost:4001/api';
 
+if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_URL) {
+  throw new Error('NEXTAUTH_URL environment variable is required in production');
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({

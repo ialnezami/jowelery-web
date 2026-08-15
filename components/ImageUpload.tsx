@@ -39,26 +39,30 @@ export function ImageUpload({ value = [], onChange, maxImages = 5, folder = 'jow
     setUploading(true)
 
     try {
-      const formData = new FormData()
-      Array.from(files).forEach((file) => {
-        formData.append('files', file)
-      })
-      formData.append('folder', folder)
-
       const token = typeof window !== 'undefined' ? (window as any).__JWT : undefined
-      const response = await fetch(`${B}/upload`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      })
+      const urls: string[] = []
 
-      const data = await response.json()
+      for (const file of Array.from(files)) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('folder', folder)
 
-      if (!response.ok) {
-        throw new Error(data.error || data.message || 'Upload failed')
+        const response = await fetch(`${B}/upload/image`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || data.message || 'Upload failed')
+        }
+
+        const url = data.url ?? data.data?.url
+        if (url) urls.push(url)
       }
 
-      const urls = data.urls ?? data.data?.urls ?? []
       const newUrls = [...value, ...urls]
       onChange(newUrls)
     } catch (error) {

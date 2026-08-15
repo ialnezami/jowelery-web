@@ -28,11 +28,11 @@ export function SingleImageUpload({ value, onChange, folder = 'jowelery', label 
 
     try {
       const formData = new FormData()
-      formData.append('files', files[0])
+      formData.append('file', files[0])
       formData.append('folder', folder)
 
       const token = typeof window !== 'undefined' ? (window as any).__JWT : undefined
-      const response = await fetch(`${B}/upload`, {
+      const response = await fetch(`${B}/upload/image`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -44,9 +44,9 @@ export function SingleImageUpload({ value, onChange, folder = 'jowelery', label 
         throw new Error(data.error || data.message || 'Upload failed')
       }
 
-      const urls = data.urls ?? data.data?.urls ?? []
-      if (urls.length > 0) {
-        onChange(urls[0])
+      const url = data.url ?? data.data?.url
+      if (url) {
+        onChange(url)
         toast({
           title: 'Success',
           description: 'Image uploaded successfully',
